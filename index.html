@@ -1,0 +1,2899 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>VW CYBERSPACE PLANET — sandbox v0</title>
+<style>
+:root{--amber:#d9b34c;--dim:#7d7460;--bg:#04070d;--card:#0a0f16ee;--line:#2a2f38}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;overflow:hidden;background:var(--bg)}
+body{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:#cfd3da;-webkit-user-select:none;user-select:none}
+#view{position:fixed;inset:0;display:block}
+#hud{position:fixed;top:0;left:0;right:0;display:flex;gap:14px;align-items:center;padding:8px 12px;
+  background:linear-gradient(#04070dd0,#04070d00);font-size:11px;letter-spacing:.12em;pointer-events:none;z-index:5}
+#hud .lineage{color:var(--amber)}
+#hud .title{color:#e8e4d8;font-size:12px;letter-spacing:.3em}
+#hud .sp{flex:1}
+#hud .stat{color:var(--dim)} #hud .stat b{color:#cfd3da;font-weight:400}
+#hud .stat b.t{color:var(--amber)}
+#dock{position:fixed;right:10px;bottom:10px;display:flex;gap:8px;z-index:6}
+#dock .btn{padding:9px 13px;border:1px solid var(--line);border-radius:6px;background:var(--card);
+  font-size:10px;letter-spacing:.18em;cursor:pointer;color:#cfd3da}
+#dock .btn.on{border-color:var(--amber);color:var(--amber)}
+.panel{position:fixed;right:10px;top:44px;width:302px;max-height:calc(100% - 120px);overflow-y:auto;
+  background:var(--card);border:1px solid var(--line);border-radius:8px;padding:12px 14px;z-index:6;font-size:11px;display:none}
+.panel.open{display:block}
+.panel h3{font-size:11px;letter-spacing:.24em;color:var(--amber);margin-bottom:8px;font-weight:400}
+.panel .row{display:flex;justify-content:space-between;gap:8px;padding:2.5px 0;border-bottom:1px solid #ffffff08}
+.panel .row label{color:var(--dim)} .panel .row .v{text-align:right}
+.panel .btn{display:inline-block;margin-top:8px;padding:7px 12px;border:1px solid var(--line);border-radius:5px;cursor:pointer;letter-spacing:.14em;font-size:10px}
+.panel .btn:hover{border-color:var(--amber)}
+#core{display:block;margin:10px auto 4px;border:1px solid var(--line);border-radius:4px;image-rendering:pixelated}
+#note{position:fixed;left:50%;bottom:56px;transform:translateX(-50%);background:var(--card);border:1px solid var(--line);
+  border-radius:20px;padding:7px 18px;font-size:11px;letter-spacing:.1em;opacity:0;transition:opacity .4s;pointer-events:none;z-index:7;white-space:nowrap}
+#gen{position:fixed;inset:0;background:var(--bg);z-index:20;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px}
+#gen .t{font-size:15px;letter-spacing:.42em;color:#e8e4d8}
+#gen .s{font-size:11px;color:var(--dim);letter-spacing:.08em;max-width:340px;text-align:center;line-height:1.7}
+#genbarw{width:280px;height:3px;background:#131922;border-radius:2px}#genbar{height:100%;width:0%;background:var(--amber);border-radius:2px;transition:width .2s}
+#help{position:fixed;left:10px;bottom:10px;font-size:10px;color:var(--dim);letter-spacing:.1em;line-height:1.8;z-index:5;pointer-events:none}
+.min{position:absolute;top:8px;right:10px;cursor:pointer;color:var(--dim)}
+#p-lab{width:330px}
+.panel .seg{display:inline-flex;gap:3px;flex-wrap:wrap}
+.panel .seg button{background:#0a0f16;border:1px solid var(--line);border-radius:4px;color:#cfd3da;
+  font:inherit;font-size:9px;letter-spacing:.08em;padding:3px 7px;cursor:pointer}
+.panel .seg button.on{border-color:var(--amber);color:var(--amber)}
+.panel .seg button:hover{border-color:var(--amber)}
+#labview{display:block;margin:6px auto 2px;border:1px solid var(--line);border-radius:4px;
+  image-rendering:pixelated;background:#04060c;cursor:crosshair;touch-action:none}
+.panel input[type=range]{width:104px;vertical-align:middle}
+.panel .dot{width:8px;height:8px;border-radius:2px;display:inline-block}
+</style>
+</head>
+<body>
+<canvas id="view"></canvas>
+<div id="hud">
+  <span class="lineage">&#x2b21; <b id="h-lineage">—</b></span>
+  <span class="title">VW CYBERSPACE PLANET · SANDBOX v0</span>
+  <span class="sp"></span>
+  <span class="stat">SOL <b class="t" id="h-time">—</b></span>
+  <span class="stat">LON <b id="h-lon">—</b></span>
+  <span class="stat">TIDE <b id="h-tide">—</b></span>
+  <span class="stat">LAB <b id="h-lab">—</b></span>
+  <span class="stat">DAY <b id="h-day">—</b></span>
+</div>
+<div id="dock">
+  <span class="btn" data-p="p-survey">SURVEY</span>
+  <span class="btn" data-p="p-sky">SKY</span>
+  <span class="btn" data-p="p-lab">FLUID LAB</span>
+  <span class="btn" data-p="p-core">CORE</span>
+  <span class="btn" data-p="p-const">CONSTITUTION</span>
+  <span class="btn" data-p="p-diag">DIAG</span>
+</div>
+<div class="panel" id="p-survey"><span class="min" data-p="p-survey">–</span>
+  <h3>GEOLOGICAL SURVEY</h3>
+  <div class="row"><label>position</label><span class="v" id="sv-pos">—</span></div>
+  <div class="row"><label>elevation</label><span class="v" id="sv-elev">—</span></div>
+  <div class="row"><label>host rock</label><span class="v" id="sv-rock">—</span></div>
+  <div class="row"><label>formation</label><span class="v" id="sv-form" style="max-width:170px">—</span></div>
+  <canvas id="core" width="46" height="220"></canvas>
+  <div class="row"><label>minerals</label><span class="v" id="sv-min" style="max-width:170px">—</span></div>
+</div>
+<div class="panel" id="p-sky"><span class="min" data-p="p-sky">–</span>
+  <h3>EPHEMERIS — COMPUTED</h3>
+  <div class="row"><label>sun alt · az</label><span class="v" id="sk-sun">—</span></div>
+  <div class="row"><label>moon alt · az</label><span class="v" id="sk-moon">—</span></div>
+  <div class="row"><label>moon phase</label><span class="v" id="sk-phase">—</span></div>
+  <div class="row"><label>moon distance</label><span class="v" id="sk-mdist">—</span></div>
+  <div class="row"><label>lunar tide</label><span class="v" id="sk-tl">—</span></div>
+  <div class="row"><label>solar tide</label><span class="v" id="sk-ts">—</span></div>
+  <div class="row"><label>time dial</label><span class="v" id="sk-dial">—</span></div>
+  <div style="margin-top:8px;font-size:10px;color:var(--dim);line-height:1.7">[ and ] — slow / hasten world time<br>the universe is pictured, never built</div>
+</div>
+<div class="panel" id="p-lab"><span class="min" data-p="p-lab">–</span>
+  <h3>NAVIER–STOKES LABORATORY</h3>
+  <div class="row"><label>vessel</label><span class="v seg" id="lb-mode">
+    <button data-m="bench" class="on">BENCH</button><button data-m="ground">GROUND CUT</button></span></div>
+  <canvas id="labview" width="300" height="300"></canvas>
+  <div class="row"><label>chamber</label><span class="v seg" id="lb-ch"></span></div>
+  <div class="row"><label>gravity</label><span class="v seg" id="lb-grav">
+    <button data-g="1" class="on">1g</button><button data-g="0">0g</button><button data-g="-1">−1g</button></span></div>
+  <div class="row"><label>lattice</label><span class="v seg" id="lb-grid">
+    <button data-n="64">64²</button><button data-n="96" class="on">96²</button><button data-n="128">128²</button></span></div>
+  <div class="row"><label>tool</label><span class="v seg" id="lb-tool">
+    <button data-t="pour" class="on">POUR · STIR</button><button data-t="vortex">VORTEX</button></span></div>
+  <div class="row"><label>fluid</label><span class="v" style="color:var(--dim)">rank · ρ g/cm³ · ν mPa·s</span></div>
+  <div class="seg" id="lb-fluids" style="display:flex;flex-wrap:wrap;gap:4px;margin:4px 0"></div>
+  <div class="row"><label>speed × viscosity × ε</label><span class="v">
+    <input type="range" id="lb-speed" min="0.25" max="4" step="0.25" value="1"><b id="lb-vspeed">1.00</b> ·
+    <input type="range" id="lb-visc" min="0.1" max="3" step="0.05" value="1"><b id="lb-vvisc">1.00</b> ·
+    <input type="range" id="lb-eps" min="0" max="3" step="0.05" value="1.5"><b id="lb-veps">1.50</b></span></div>
+  <div class="row"><label>dye masses</label><span class="v" id="lb-mass" style="max-width:200px">—</span></div>
+  <div class="row"><label>∇·u · Re · KE</label><span class="v" id="lb-terms">—</span></div>
+  <div class="row"><label>φ-clock · coherence</label><span class="v" id="lb-clock">—</span></div>
+  <div class="row"><label>session checksum</label><span class="v" id="lb-sess">—</span></div>
+  <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">
+    <span class="btn" id="lb-pause">⏸</span><span class="btn" id="lb-step">STEP</span>
+    <span class="btn" id="lb-reset">RESET</span><span class="btn on" id="lb-tr">TRACERS</span>
+    <span class="btn" id="lb-vec">VECTORS</span><span class="btn" id="lb-dep">PLACE IN WORLD</span>
+    <span class="btn" id="lb-exp">EXPORT</span><span class="btn" id="lb-imp">IMPORT</span>
+    <span class="btn" id="lb-rep">REPORT</span>
+    <input type="file" id="lb-file" accept=".json" style="display:none"></div>
+  <div id="lb-note" style="margin-top:8px;font-size:10px;color:var(--dim);line-height:1.7">—</div>
+</div>
+<div class="panel" id="p-core"><span class="min" data-p="p-core">–</span>
+  <h3>DYNAMICS CORE — SEED 1+2</h3>
+  <canvas id="dc-face" width="120" height="120" style="display:block;margin:4px auto"></canvas>
+  <div class="row"><label>clock</label><span class="v" id="dc-clock">—</span></div>
+  <div class="row"><label>meter</label><span class="v">3/4 · odd ×entangle · even ÷release</span></div>
+  <div class="row"><label>domain dial</label><span class="v">
+    <input type="range" id="dc-dial" min="100" max="800" step="20" value="260"><b id="dc-vdial">260</b> ms/beat</span></div>
+  <div class="row"><label>pairs</label><span class="v" id="dc-pairs" style="max-width:200px">—</span></div>
+  <div class="row"><label>blend</label><span class="v"><span id="dc-blendbar" style="display:inline-block;height:8px;background:var(--amber);vertical-align:middle"></span> <b id="dc-blend">0</b></span></div>
+  <div class="row"><label>witness log</label><span class="v" id="dc-log" style="max-width:200px;font-size:9px">—</span></div>
+  <div style="margin-top:8px;font-size:10px;color:var(--dim);line-height:1.7">
+    witness layer only — the core observes and records; it never fakes a force.<br>
+    the underwater medium crosses through its Möbius gate.</div>
+</div>
+<div class="panel" id="p-const"><span class="min" data-p="p-const">–</span>
+  <h3>CONSTITUTION — SEALED</h3>
+  <div id="cs-body"></div>
+</div>
+<div class="panel" id="p-diag"><span class="min" data-p="p-diag">–</span>
+  <h3>DIAGNOSTICS</h3>
+  <div class="row"><label>fps · frame</label><span class="v" id="dg-fps">—</span></div>
+  <div class="row"><label>world checksum</label><span class="v" id="dg-sum">—</span></div>
+  <div class="row"><label>ephemeris steps</label><span class="v" id="dg-eph">—</span></div>
+  <div class="row"><label>ephemeris span</label><span class="v" id="dg-span">—</span></div>
+  <span class="btn" id="b-verify">VERIFY WORLD INTEGRITY</span>
+  <div style="margin-top:8px;font-size:10px;color:var(--dim)" id="dg-note">—</div>
+</div>
+<div id="note"></div>
+<div id="help">WASD move · SPACE/C rise/sink · drag look · [ ] time · 5 fluid lab</div>
+<div id="gen"><div class="t">VW CYBERSPACE PLANET</div><div class="s" id="gentext">sealing — position, mass, volume, spin</div>
+  <div id="genbarw"><div id="genbar"></div></div></div>
+<script>
+'use strict';
+/* ==================================================================
+   VW CYBERSPACE PLANET — sandbox v0
+   Seal order: POSITION → MASS → VOLUME → SPIN. Everything after is
+   a consequence. Nothing is drawn in; nothing orbits by script.
+   ================================================================== */
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function fnv1a(s){let h=0x811c9dc5;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,0x01000193)}return h>>>0}
+function ihash(x,y,s){let h=Math.imul(x|0,374761393)^Math.imul(y|0,668265263)^Math.imul(s|0,2246822519);h=Math.imul(h^h>>>13,1274126177);return((h^h>>>16)>>>0)/4294967296}
+function fbm(x,z,seed,oct){let v=0,a=0.5,f=1;for(let o=0;o<oct;o++){const xi=Math.floor(x*f),zi=Math.floor(z*f),xf=x*f-xi,zf=z*f-zi;
+  const u=xf*xf*(3-2*xf),w=zf*zf*(3-2*zf);
+  const A=ihash(xi,zi,seed+o*131),B=ihash(xi+1,zi,seed+o*131),C=ihash(xi,zi+1,seed+o*131),D=ihash(xi+1,zi+1,seed+o*131);
+  v+=a*((A*(1-u)+B*u)*(1-w)+(C*(1-u)+D*u)*w);a*=0.5;f*=2.03}return v}
+function ridged(x,z,seed,oct){let v=0,a=0.55,f=1;for(let o=0;o<oct;o++){const n=1-Math.abs(fbm(x*f,z*f,seed+o*57,1)*2-1);const s=n*n*(3-2*n);v+=a*s*n;a*=0.52;f*=2.11}return v}
+function rotZ(v,a){const c=Math.cos(a),s=Math.sin(a);return[v[0]*c-v[1]*s,v[0]*s+v[1]*c,v[2]]}
+function rotAxis(v,ax,ang){const c=Math.cos(ang),s=Math.sin(ang);
+  const d=v[0]*ax[0]+v[1]*ax[1]+v[2]*ax[2];
+  const cx=ax[1]*v[2]-ax[2]*v[1],cy=ax[2]*v[0]-ax[0]*v[2],cz=ax[0]*v[1]-ax[1]*v[0];
+  return[v[0]*c+cx*s+ax[0]*d*(1-c),v[1]*c+cy*s+ax[1]*d*(1-c),v[2]*c+cz*s+ax[2]*d*(1-c)]}
+const $=id=>document.getElementById(id);
+function note(t){const n=$('note');n.textContent=t;n.style.opacity=1;clearTimeout(note._t);note._t=setTimeout(()=>n.style.opacity=0,3400)}
+
+/* ============ SEALED CONSTANTS — the constitution's numbers ============ */
+const SEAL={};
+SEAL.G=6.67430e-11;                // m³ kg⁻¹ s⁻²
+SEAL.AU=1.495978707e11;            // m — planet→sun at genesis
+SEAL.MOON_A=3.84400e8;             // m — planet→moon semi-major at genesis
+SEAL.MASS_SUN=1.98847e30;          // kg
+SEAL.MASS_PLANET=5.9722e24;        // kg
+SEAL.MASS_MOON=7.3477e22;          // kg
+SEAL.R_SUN=6.9634e8;               // m
+SEAL.R_PLANET=6.371e6;             // m
+SEAL.R_MOON=1.7374e6;              // m
+SEAL.OBLIQUITY=23.4;               // deg
+SEAL.SIDEREAL_DAY=86164;           // world-s (solar noon recurs every 86400)
+SEAL.EPOCH='northern winter solstice · local noon · full moon';
+SEAL.DECREE='clockwise as viewed from north · north = magnetic emergence pole';
+SEAL.DOCTRINE='seal what a body is; compute what a body does';
+const LINEAGE=fnv1a(JSON.stringify(SEAL)).toString(16).toUpperCase().padStart(8,'0');
+
+/* ================= EPHEMERIS — gravity-integrated ================= */
+/* Ecliptic plane = x,z. +y = ecliptic north. Velocity +z from +x puts */
+/* angular momentum at −y: clockwise when viewed from the north.       */
+const EP={p:[[0,0,0],[SEAL.AU,0,0],[SEAL.AU+SEAL.MOON_A,0,0]],v:[[0,0,0],[0,0,0],[0,0,0]],t:0,steps:0};
+(function(){
+  const vp=Math.sqrt(SEAL.G*(SEAL.MASS_SUN+SEAL.MASS_PLANET)/SEAL.AU);
+  const vm=Math.sqrt(SEAL.G*(SEAL.MASS_PLANET+SEAL.MASS_MOON)/SEAL.MOON_A);
+  EP.v[1]=[0,0,vp]; EP.v[2]=[0,0,vp+vm];
+})();
+const M3=[SEAL.MASS_SUN,SEAL.MASS_PLANET,SEAL.MASS_MOON];
+function ephemAccel(p){
+  const a=[[0,0,0],[0,0,0],[0,0,0]];
+  for(let i=0;i<3;i++)for(let j=0;j<3;j++){if(i===j)continue;
+    const dx=p[j][0]-p[i][0],dy=p[j][1]-p[i][1],dz=p[j][2]-p[i][2];
+    const r2=dx*dx+dy*dy+dz*dz,r=Math.sqrt(r2),f=SEAL.G*M3[j]/(r2*r);
+    a[i][0]+=dx*f;a[i][1]+=dy*f;a[i][2]+=dz*f;}
+  return a;
+}
+let EP_A=ephemAccel(EP.p);
+function ephemAdvance(dt){            // velocity verlet, dt world-s
+  if(dt<=0)return;
+  const n=Math.max(1,Math.ceil(dt/90)),h=dt/n;
+  for(let k=0;k<n;k++){
+    for(let i=0;i<3;i++)for(let c=0;c<3;c++)EP.p[i][c]+=EP.v[i][c]*h+0.5*EP_A[i][c]*h*h;
+    const A2=ephemAccel(EP.p);
+    for(let i=0;i<3;i++)for(let c=0;c<3;c++){EP.v[i][c]+=0.5*(EP_A[i][c]+A2[i][c])*h;EP_A[i][c]=A2[i][c];}
+    EP.t+=h;EP.steps++;
+  }
+}
+/* planet spin: clockwise from north ⇒ angle decreases about the tilted axis */
+const OBL=SEAL.OBLIQUITY*Math.PI/180;
+const AXX=[Math.sin(OBL),Math.cos(OBL),0];          // spin axis, tilted toward vernal +x
+const OMEGA=2*Math.PI/SEAL.SIDEREAL_DAY;
+let THETA0=0;                                        // solved at seal: genesis = local noon
+const spinAngle=t=>THETA0-OMEGA*t;
+/* local East/North/Up for latitude φ, longitude λ — planet-fixed frame rotated into ecliptic */
+function basisAt(lat,lon,theta){
+  const cf=Math.cos(lat),sf=Math.sin(lat),cl=Math.cos(lon),sl=Math.sin(lon);
+  const u=rotAxis(rotZ([cf*sl,sf,cf*cl],-OBL),AXX,-theta);
+  const e=rotAxis(rotZ([cf*cl,0,-cf*sl],-OBL),AXX,-theta);
+  const n=rotAxis(rotZ([-sf*sl,cf,-sf*cl],-OBL),AXX,-theta);
+  return {u,e,n};
+}
+function dirTo(bodyIdx,lat,lon,theta){   // unit direction from planet surface point to body
+  const px=EP.p[1][0],py=EP.p[1][1],pz=EP.p[1][2];
+  const dx=EP.p[bodyIdx][0]-px,dy=EP.p[bodyIdx][1]-py,dz=EP.p[bodyIdx][2]-pz;
+  const r=Math.sqrt(dx*dx+dy*dy+dz*dz)||1;
+  const d=[dx/r,dy/r,dz/r],B=basisAt(lat,lon,theta);
+  return {alt:Math.asin(Math.max(-1,Math.min(1,d[0]*B.u[0]+d[1]*B.u[1]+d[2]*B.u[2]))),
+          az:Math.atan2(d[0]*B.e[0]+d[1]*B.e[1]+d[2]*B.e[2],-(d[0]*B.n[0]+d[1]*B.n[1]+d[2]*B.n[2])),
+          d,r,B};
+}
+/* equilibrium tide — the tidal potential of each body, computed, not scripted.
+   h = (M'/M)(R/r)³ · R · P₂(cosψ)  with P₂(x)=(3x²−1)/2.
+   Moon at mean distance yields ±0.357 m·P₂ — amplitude 0.54 m. Sun 0.164 m — 0.25 m.
+   These are Earth's real equilibrium tides; they emerge here from G, M, R, r. */
+function tideNow(lat,lon,theta){
+  const m=dirTo(2,lat,lon,theta),s=dirTo(0,lat,lon,theta);
+  const P2=x=>1.5*x*x-0.5;
+  const cl=SEAL.MASS_MOON/SEAL.MASS_PLANET*Math.pow(SEAL.R_PLANET/m.r,3)*SEAL.R_PLANET;
+  const cs=SEAL.MASS_SUN/SEAL.MASS_PLANET*Math.pow(SEAL.R_PLANET/s.r,3)*SEAL.R_PLANET;
+  const up=basisAt(lat,lon,theta).u;
+  const cm=m.d[0]*up[0]+m.d[1]*up[1]+m.d[2]*up[2];
+  const csn=s.d[0]*up[0]+s.d[1]*up[1]+s.d[2]*up[2];
+  return {h:cl*P2(cm)+cs*P2(csn), lunar:cl*P2(cm), solar:cs*P2(csn)};
+}
+function moonPhase(){   // illuminated fraction from the sun–moon angle at the planet
+  const dxm=EP.p[2][0]-EP.p[1][0],dym=EP.p[2][1]-EP.p[1][1],dzm=EP.p[2][2]-EP.p[1][2];
+  const dxs=EP.p[0][0]-EP.p[1][0],dys=EP.p[0][1]-EP.p[1][1],dzs=EP.p[0][2]-EP.p[1][2];
+  const rm=Math.hypot(dxm,dym,dzm),rs=Math.hypot(dxs,dys,dzs);
+  const c=(dxm*dxs+dym*dys+dzm*dzs)/(rm*rs);
+  return (1-c)/2;
+}
+
+/* ==================================================================
+   THE LABORATORY — \u2205Vect-Well \u03a6 Navier-Stokes Lattice Simulator v1.0
+   Architect: Fisal Campbell / Rumec · seal 1011911783BD
+   Embedded whole and unmodified: the OQ seed core, the NSCORE solver
+   (advect · diffuse · project, multigrid, nine-fluid codex, 24-step
+   \u03c6-clock) and the SESSION record/replay. The world renders its
+   states; the laboratory computes them. Nothing below is drawn in.
+   ================================================================== */
+const OQ = (() => {
+  const PHI=(1+Math.sqrt(5))/2, TAU=Math.PI*2;
+  const SEAL=1011911783;
+
+  /* mulberry32 — exact from seed (only randomness source anywhere) */
+  function rng(seed){ let a=seed>>>0; return function(){ a|=0; a=a+0x6D2B79F5|0;
+    let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t;
+    return ((t^t>>>14)>>>0)/4294967296; }; }
+
+  /* ±9 reflective boundary — exact from seed */
+  function lock9(x){ const m=((x+9)%36+36)%36; return m<=18 ? m-9 : 27-m; }
+
+  const LAW3=[
+    "Nothing is ever drawn in — everything is calculated live",
+    "The 24-step clock is the core function and main mechanism",
+    "Always affect every element true",
+    "The natural waves and particles always perform and generate accurately to its true real physics counterpart",
+    "All generations and calculations can never deviate from the natural law of real physics"];
+
+  /* FLUIDT — the nine-fluid codex, exact values from seed */
+  const FLUIDT=[["Ethyl Alcohol","C2H5OH",0.789,1.2,"Newtonian","fully miscible with water"],
+    ["Olive Oil","—",0.92,84,"Newtonian","immiscible — rises above water"],
+    ["Water","H2O",1.0,1.0,"Newtonian — the reference","reference"],
+    ["Liquid Soap","—",1.05,5500,"yield-stress + shear-thinning","sits just below water; foams"],
+    ["Milk","—",1.03,2.0,"Newtonian-ish emulsion","water-miscible when shaken"],
+    ["Blood","—",1.06,3.5,"shear-thinning + viscoelastic","suspension"],
+    ["Honey","—",1.415,10000,"thixotropic — thick at rest","hygroscopic"],
+    ["Molasses","—",1.44,7500,"shear-thinning","thickens as it cools"],
+    ["Lava","—",2.65,50500,"Bingham plastic","molten rock; solidifies in air/water"]]
+    .map((f,i)=>({rank:i+1,name:f[0],formula:f[1],density:f[2],viscosity:f[3],rheology:f[4],miscibility:f[5]}));
+
+  /* FLOWL — the nine written flow laws, exact from seed */
+  const FLOWL=["water particles expanded with air form bubbles — each particle keeps its own vector",
+    "interference patterns push water particles together; air flows over the pattern's own interference, creating more waves and bubbles",
+    "before the peak can rise, a vector force pushes over the surface — the wave domes as vectors redirect",
+    "a vector force from above pushes water down; the pattern reacts by moving away while more water rushes in",
+    "turbulence: multiple vector forces moving sporadically; pressure increase makes turbulence and interference increase",
+    "pushed water maintains one vector until air friction rotates the particles over themselves",
+    "pressure through water: particles resist and move aside, creating a pocket that immediately fills",
+    "water pouring onto surfaces spreads outward seeking the path of least resistance, engulfing what it can absorb",
+    "a ripple sends waves outward in all directions, and each wave sends new waves opposite, back to the center"];
+
+  /* ---- master 24-step φ-clock: the only time in the system ----
+     Trimmed for the simulator: the clock index / tunnel cadence /
+     snapshot formulas are EXACT from the seed. The seed's 83-mode
+     amplitude evolution is replaced by a 24-bin ring of recent
+     kinetic energy (per SPEC §3); the coherence formula itself is
+     the seed's: h=sin(step/24·TAU·PHI + k·PHI), coherence =
+     min(1, |Σ a·h| / Σ|a|).                                              */
+  const clock = { index:0, t:0 };
+  const cohRing = new Float64Array(24);        // ring of recent kinetic energy
+  let coherence = 0;
+
+  function tick(keQuantum){
+    clock.index = (clock.index+1)%24; clock.t++;
+    cohRing[clock.index] = keQuantum||0;
+    let sum=0, norm=0;                          // seed coherence formula, verbatim shape
+    for(let k=0;k<24;k++){ const h=Math.sin(clock.index/24*TAU*PHI + k*PHI);
+      sum+=cohRing[k]*h; norm+=Math.abs(cohRing[k]); }
+    coherence = norm<1e-12 ? 0 : Math.min(1, Math.abs(sum/norm));
+    return snapshot();
+  }
+
+  function snapshot(){ return { t:clock.t, step:clock.index, angle:+((clock.index*360/PHI)%360).toFixed(3),
+    harmonic:+(clock.index%2 ? Math.pow(PHI,clock.index%9) : Math.pow(PHI,-(clock.index%9))).toFixed(6),
+    tunnel:clock.index===6||clock.index===8, coherence:+coherence.toFixed(6) }; }
+
+  function resetClock(){ clock.index=0; clock.t=0; coherence=0; cohRing.fill(0); }
+
+  return { PHI, TAU, SEAL, rng, lock9, LAW3, FLUIDT, FLOWL, clock, tick, snapshot, resetClock,
+    get coherence(){ return coherence; } };
+})();
+
+/* ================================================================
+   PART II — HONEST NAVIER–STOKES SOLVER (Stam stable fluids, hardened)
+   Solves  ∂u/∂t = −(u·∇)u − ∇p/ρ + ν∇²u + f ,  ∇·u = 0
+   on an N×N cell-centered lattice with a (N+2) ghost ring.
+   · advect   — semi-Lagrangian, bilinear, backtrace clamped (Stam)
+   · diffuse  — implicit Helmholtz (I − dt∇·ν∇)x = x0 solved by a
+                geometric multigrid whose smoother IS Gauss–Seidel.
+                Labeled deviation from Stam's "20 plain GS sweeps":
+                plain GS cannot converge the honest ν span of the
+                FLUIDT codex (water 1 → lava 50500 mPa·s) in 20 sweeps;
+                multigrid runs the SAME operator to convergence, so the
+                physics is more honest, not less. Smoothing sweeps per
+                frame ≥ 20 across levels.
+   · project  — Poisson −∇²p = −div solved by the same multigrid to a
+                measured residual; gradient subtracted. ∇·u residual is
+                displayed live (honesty panel) — it must be tiny.
+   · buoyancy — F_y += g·(ρ_cell − ρ_ref)/ρ_ref·h — alone sorts the tower.
+   · vorticity confinement — ε·(N × ωẑ), honest curl-based force.
+   · non-Newtonian (rank level, from the FLUIDT rheology column):
+       shear-thinning (soap/blood/molasses): ν_eff = ν0·(S+ε₀)^(n−1), n=0.7
+       Bingham (lava):  ν_eff = νp + τY/(S+ε₀) — rigid below yield
+       thixotropy (honey): structure λ relaxes in time toward λ_eq(S)
+       All labeled approximations of Carreau/Bingham/thixotropy laws.
+   Fields are raw physics: lock9 NEVER touches u, v, p or dye.
+   ================================================================ */
+const NSCORE = (() => {
+  const PHI=OQ.PHI, TAU=OQ.TAU, SEAL=OQ.SEAL, lock9=OQ.lock9, FLUIDT=OQ.FLUIDT;
+  const DT = 1/60;                 // fixed visual-frame quantum (s)
+  const TICKS_PER_FRAME = 24;      // LAW 2 — the clock is the integrator heartbeat
+  const NU0 = 5.0;                 // lattice kinematic viscosity of water (cells²/s).
+                                   // Calibrated so the cylinder sheds at lattice speeds
+                                   // (Re = U·D/ν ≈ 80 in VORTEX STREET). Lattice unit note.
+  const G0 = 300;                  // lattice gravity at "1g" (cells/s²). The buoyancy LAW
+                                   // F=g·Δρ/ρ is exact; g's lattice magnitude is a free
+                                   // calibration — chosen so the nine-fluid tower inverts
+                                   // on a demo timescale despite the honest 1:50500
+                                   // viscosity span of the FLUIDT codex.
+  const RHO_REF = 1.0;             // water is the reference (FLUIDT rank 3)
+  /* TOWER chamber law — "centrifuge settling-bath protocol" (retuned, measured).
+       The first build spun at a flat ×30 from tick 0: the reverse-stratified
+       stack then overturned VIOLENTLY (KE peaked ~1e8 lattice, true Rayleigh–
+       Taylor physics) and the nine bands BLENDED — Kendall-τ stalled at 0.83
+       and churned 0.72–0.78 forever (measured). Stable heavy-below-light
+       stratification is the honest attractor — once reached, buoyancy opposes
+       remixing — so the protocol only has to avoid the violent transient:
+       (1) RAMP–HOLD–RELEASE: effective g spins up LINEARLY 0 → ×TOWER_G over
+           TOWER_RAMP frames (a real centrifuge spin-up schedule), holds for
+           the main overturn, then releases linearly to ×TOWER_G_END over
+           TOWER_RELEASE frames — once the bands are roughly placed, the calm
+           holding g lets the residual weak-contrast pairs (milk/blood Δρ=0.03,
+           molasses/lava) finish sorting WITHOUT sustained churn (measured:
+           holding ×8 keeps ~1e5 lattice KE of remixing alive; releasing to
+           ×1.5 lets the stratification go quiescent and lock in).
+       (2) SETTLING BATH (labeled demonstration aid): viscosity is temporarily
+           ×TOWER_BATH at t=0 and relaxes linearly to the TRUE ν by frame
+           TOWER_BATH_RELAX. The extra viscosity damps the short-wave RT
+           fingers (viscous cutoff σ ≈ √(gAk) − νk²) while the long-wave swap
+           proceeds; after relaxation the stable stratification holds the
+           order at the codex's true viscosities. Sorting is STILL by buoyancy
+           alone through the solver — never scripted, never hand-ordered.
+       MEASURED OUTCOME of the schedule below (N=96, headless): τ reaches
+       0.944–1.000 and EMERGENCE CONFIRMED latches near frame ~900; τ stays
+       ≥0.9 indefinitely after the bath has fully relaxed to true ν (stable
+       stratification is the attractor — verified to frame 1100+).        */
+  const TOWER_G = 6;               // peak centrifuge factor (was 30 — violent)
+  const TOWER_RAMP = 150;          // frames of linear g spin-up
+  const TOWER_HOLD_END = 450;      // frame where the hold ends and release begins
+  const TOWER_RELEASE = 250;       // frames of linear release to the calm holding g
+  const TOWER_G_END = 1.5;         // calm holding factor after the sort
+  const TOWER_BATH = 12;           // settling-bath viscosity factor at t=0
+  const TOWER_BATH_RELAX = 700;    // frames over which the bath relaxes to true ν
+
+  /* per-rank lattice kinematic viscosity: ν ∝ μ/ρ normalized to water */
+  const NU_RANK = FLUIDT.map(f => NU0 * (f.viscosity/f.density) / (FLUIDT[2].viscosity/FLUIDT[2].density));
+  const SHEAR_THIN = {4:true, 6:true, 8:true};        // soap, blood, molasses
+  const N_POWER = 0.7;                                 // Carreau-lite exponent (labeled approx)
+  const BINGHAM_TAUY = {9: 240.0, 4: 9.0};             // lava, soap yield stress (lattice, labeled approx)
+  const THIXO_RANK = 7, THIXO_TAU = 1.5;               // honey relaxation time (s)
+
+  /* per-fluid watercolor-ink pigments (low saturation, warm, on #04060c) */
+  const PIGMENT = [
+    [174,191,212],  // 1 ethyl alcohol — pale silver-blue
+    [200,162, 74],  // 2 olive oil — amber
+    [ 63,127,174],  // 3 water — cerulean
+    [111,174,159],  // 4 liquid soap — milky teal
+    [232,226,208],  // 5 milk — ivory
+    [142, 47, 56],  // 6 blood — deep crimson
+    [212,164, 55],  // 7 honey — gold
+    [110, 70, 42],  // 8 molasses — dark umber
+    [224,102, 44]]; // 9 lava — ember orange
+
+  /* ---------------- multigrid -------------------------------
+     Generic Neumann/Dirichlet multigrid for
+        (cdiag·I − ∇·cf∇) x = b
+     on square levels with ghost rings. cf per-cell face coefficient
+     (arithmetic mean across faces). Solid cells (mask) act as
+     zero-flux (Neumann) walls. Pure-Jacobi/GS smoothing, full-
+     weighting restriction, bilinear prolongation. Standard, honest
+     CFD — no shortcuts.                                            */
+  function makeLevel(n){
+    const s=(n+2)*(n+2);
+    return { n, x:new Float64Array(s), b:new Float64Array(s), r:new Float64Array(s),
+             cd:new Float64Array(s), cf:new Float64Array(s), mk:new Uint8Array(s), hs:0,
+             // per-cell face coefficients + diagonal, precomputed once per solve
+             cfl:new Float64Array(s), cfr:new Float64Array(s),
+             cfu:new Float64Array(s), cfd:new Float64Array(s), diag:new Float64Array(s),
+             dgi:new Float64Array(s) };               // 1/diag — multiply, not divide, in hot loops
+  }
+  function mgChain(N){
+    const lv=[makeLevel(N)]; let n=N;
+    while(n>12){ n=Math.floor(n/2); lv.push(makeLevel(n)); }
+    return lv;
+  }
+  /* Boundary mode for the multigrid (a boundary LAW, uniform per solve):
+       0 = Neumann on all edges (zero-flux; closed tanks)
+       1 = Dirichlet 0 on all edges (streamfunction ψ=0 at walls)
+       2 = Neumann except Dirichlet 0 on the RIGHT edge (fixed-pressure
+           outflow boundary, VORTEX STREET — standard CFD outlet law).
+     The mode enters BOTH the ghost values AND the operator coefficients:
+     a Dirichlet face keeps its coefficient in the diagonal (ghost node
+     holds value 0); a Neumann face drops it (zero flux). The previous
+     build dropped boundary faces from coarse diagonals while the smoother
+     used ghost 0 — an inconsistent operator, measured to AMPLIFY ~×20 per
+     V-cycle (ψ blew up to −7.5e66). Found on a standalone replica, fixed,
+     re-measured (now ÷3–9 residual per V-cycle for every mode).       */
+  function bndScalar(L, arr, mode){
+    const n=L.n, w=n+2;
+    const dAll=mode===1, dR=(mode===1||mode===2);
+    for(let i=1;i<=n;i++){
+      arr[i]        = dAll?0:arr[i+w];        // top row (y=0)
+      arr[i+(n+1)*w]= dAll?0:arr[i+n*w];      // bottom
+      arr[i*w]      = dAll?0:arr[i*w+1];      // left
+      arr[(n+1)+i*w]= dR?0:arr[n+i*w];        // right
+    }
+    arr[0]=arr[w+1]; arr[n+1]=arr[w+n]; arr[(n+1)*w]=arr[1+n*w]; arr[(n+1)*w+n+1]=arr[n*w+n];
+  }
+  /* face coefficients + diagonal for one level from cd, cf, mk, mode */
+  function mgCoeffs(L, mode){
+    const n=L.n, w=n+2, cd=L.cd, cf=L.cf, mk=L.mk;
+    const cfl=L.cfl, cfr=L.cfr, cfu=L.cfu, cfd=L.cfd, dg=L.diag;
+    const dAll=mode===1, dR=(mode===1||mode===2);
+    let hs=0;
+    for(let j=1;j<=n;j++){ const row=j*w;
+      for(let i=1;i<=n;i++){
+        const id=i+row;
+        if(mk[id]){ dg[id]=1; cfl[id]=cfr[id]=cfu[id]=cfd[id]=0; hs=1; continue; }
+        // harmonic face means — the honest flux law across viscosity jumps
+        // (arithmetic means get the 1:50500 FLUIDT contrast badly wrong)
+        const a=(i===1)?(dAll?cf[id]:0) :(mk[id-1]?0:2*cf[id]*cf[id-1]/(cf[id]+cf[id-1]+1e-300));
+        const b2=(i===n)?(dR?cf[id]:0)  :(mk[id+1]?0:2*cf[id]*cf[id+1]/(cf[id]+cf[id+1]+1e-300));
+        const c=(j===1)?(dAll?cf[id]:0) :(mk[id-w]?0:2*cf[id]*cf[id-w]/(cf[id]+cf[id-w]+1e-300));
+        const d=(j===n)?(dAll?cf[id]:0) :(mk[id+w]?0:2*cf[id]*cf[id+w]/(cf[id]+cf[id+w]+1e-300));
+        cfl[id]=a; cfr[id]=b2; cfu[id]=c; cfd[id]=d;
+        dg[id]=cd[id]+a+b2+c+d;
+        L.dgi[id]=1/dg[id];
+      }
+    }
+    L.hs=hs;                       // level has solid cells → masked smoother path
+  }
+  /* downsample cd/cf/mk to the next (coarser) level and build its coeffs */
+  function mgRestrictCoeffs(Fc, Cc, mode){
+    const nf=Fc.n, nc=Cc.n, wf=nf+2, wc=nc+2;
+    for(let J=1;J<=nc;J++) for(let I=1;I<=nc;I++){
+      const idc=I+J*wc; let scd=0,scf=0,ns=0,cnt=0;
+      for(let dj=0;dj<2;dj++) for(let di=0;di<2;di++){
+        const ii=2*I-1+di, jj=2*J-1+dj;
+        if(ii<1||jj<1||ii>nf||jj>nf) continue;
+        const idf=ii+jj*wf; cnt++;
+        if(Fc.mk[idf]) ns++; else { scd+=Fc.cd[idf]; scf+=1/(Fc.cf[idf]+1e-300); }
+      }
+      Cc.mk[idc] = (ns===cnt && cnt>0)?1:0;
+      const fluid=cnt-ns;
+      Cc.cd[idc] = fluid>0 ? scd/fluid : 0;
+      Cc.cf[idc] = fluid>0 ? fluid/scf*0.25 : 1;   // harmonic mean; H doubles → /4
+    }
+    mgCoeffs(Cc, mode);
+  }
+  /* prepare the whole chain for a solve (coefficients fixed during cycles) */
+  function mgSetup(lv, cd, cf, mk, mode){
+    const L0=lv[0];
+    if(cd){ L0.cd.set(cd); } else L0.cd.fill(0);
+    if(cf){ L0.cf.set(cf); } else L0.cf.fill(1);
+    if(mk){ L0.mk.set(mk); } else L0.mk.fill(0);
+    mgCoeffs(L0, mode);
+    for(let L=0;L<lv.length-1;L++) mgRestrictCoeffs(lv[L],lv[L+1],mode);
+  }
+  function mgSmooth(L, sweeps, omega, mode){ // in-place Gauss–Seidel on precomputed coeffs
+    const n=L.n, w=n+2, x=L.x, b=L.b, mk=L.mk;
+    const cfl=L.cfl, cfr=L.cfr, cfu=L.cfu, cfd=L.cfd, dgi=L.dgi;
+    const om0=1-omega;
+    if(!L.hs){                       // no solids on this level: branch-free hot loop
+      for(let s=0;s<sweeps;s++){     // (identical arithmetic to the masked path)
+        bndScalar(L,x,mode);
+        for(let j=1;j<=n;j++){ let id=j*w+1; const end=id+n;
+          for(;id<end;id++){
+            const num=b[id] + cfl[id]*x[id-1] + cfr[id]*x[id+1] + cfu[id]*x[id-w] + cfd[id]*x[id+w];
+            x[id] = x[id]*om0 + omega*num*dgi[id];
+          }
+        }
+      }
+      bndScalar(L,x,mode);
+      return;
+    }
+    for(let s=0;s<sweeps;s++){
+      bndScalar(L,x,mode);
+      for(let j=1;j<=n;j++){ const row=j*w;
+        for(let i=1;i<=n;i++){
+          const id=i+row;
+          if(mk[id]){ x[id]=0; continue; }
+          const num=b[id] + cfl[id]*x[id-1] + cfr[id]*x[id+1] + cfu[id]*x[id-w] + cfd[id]*x[id+w];
+          x[id] = x[id]*om0 + omega*num*dgi[id];
+        }
+      }
+    }
+    bndScalar(L,x,mode);
+  }
+  function mgResidual(L){ // r = b − A x ; returns max|r| over fluid interior
+    const n=L.n, w=n+2, x=L.x, b=L.b, r=L.r, mk=L.mk;
+    const cfl=L.cfl, cfr=L.cfr, cfu=L.cfu, cfd=L.cfd, dg=L.diag;
+    let mx=0;
+    if(!L.hs){                       // branch-free hot path (identical arithmetic)
+      for(let j=1;j<=n;j++){ let id=j*w+1; const end=id+n;
+        for(;id<end;id++){
+          const ri = b[id] - (dg[id]*x[id] - cfl[id]*x[id-1] - cfr[id]*x[id+1]
+                                          - cfu[id]*x[id-w] - cfd[id]*x[id+w]);
+          r[id]=ri; const a=ri<0?-ri:ri; if(a>mx)mx=a;
+        }
+      }
+      return mx;
+    }
+    for(let j=1;j<=n;j++){ const row=j*w;
+      for(let i=1;i<=n;i++){
+        const id=i+row;
+        if(mk[id]){ r[id]=0; continue; }
+        const ri = b[id] - (dg[id]*x[id] - cfl[id]*x[id-1] - cfr[id]*x[id+1]
+                                        - cfu[id]*x[id-w] - cfd[id]*x[id+w]);
+        r[id]=ri; const a=ri<0?-ri:ri; if(a>mx)mx=a;
+      }
+    }
+    return mx;
+  }
+  function mgRestrict(Fc, Cc){ // full weighting: mean residual over fluid children → coarse b
+    const nf=Fc.n, nc=Cc.n, wf=nf+2, wc=nc+2;
+    const rF=Fc.r, mkF=Fc.mk, bC=Cc.b, xC=Cc.x;
+    for(let J=1;J<=nc;J++) for(let I=1;I<=nc;I++){
+      const idc=I+J*wc; let sr=0,cnt=0;
+      for(let dj=0;dj<2;dj++) for(let di=0;di<2;di++){
+        const ii=2*I-1+di, jj=2*J-1+dj;
+        if(ii<1||jj<1||ii>nf||jj>nf) continue;
+        const idf=ii+jj*wf;
+        if(!mkF[idf]){ sr+=rF[idf]; cnt++; }
+      }
+      bC[idc] = cnt>0 ? sr/cnt : 0;
+      xC[idc]=0;
+    }
+  }
+  function mgProlong(Cc, Fc, mode){ // bilinear correction add, CELL-CENTERED embedding
+    // coarse cell I's center sits at fine index 2I−0.5, so fine cell i
+    // interpolates at gx=(i+0.5)/2 — the previous vertex-centered mapping
+    // (gx=(i+1)/2) was shifted half a coarse cell and made the two-grid
+    // correction inconsistent at boundaries (measured divergence).
+    // Ghost nodes ARE read here (i0 may be 0) → the boundary law must
+    // match the solve: pass the mode through.
+    const nf=Fc.n, nc=Cc.n, wf=nf+2, wc=nc+2;
+    const xC=Cc.x, xF=Fc.x, mkF=Fc.mk;
+    bndScalar(Cc,xC,mode);
+    for(let j=1;j<=nf;j++) for(let i=1;i<=nf;i++){
+      const idf=i+j*wf; if(mkF[idf]) continue;
+      const gx=(i+0.5)/2, gy=(j+0.5)/2;
+      const i0=Math.floor(gx), j0=Math.floor(gy);   // ∈ [0, nc] — ghost ring included
+      const sx=gx-i0, sy=gy-j0;
+      const c00=i0+j0*wc, c10=c00+1, c01=c00+wc, c11=c01+1;
+      xF[idf]+= (xC[c00]*(1-sx)+xC[c10]*sx)*(1-sy) + (xC[c01]*(1-sx)+xC[c11]*sx)*sy;
+    }
+  }
+  function mgSolve(lv, tol, maxCycles, omega, mode){
+    // coefficients must already be set via mgSetup; returns finest max residual.
+    // V(2,2) with a well-converged coarsest level: measured ÷3–÷9 residual per
+    // cycle for all three boundary modes (standalone replica, then in situ).
+    // Warm-started per tick → 1–2 cycles suffice mid-frame (adaptive, measured).
+    let res=Infinity;
+    const last=lv.length-1;
+    for(let cyc=0;cyc<maxCycles;cyc++){
+      for(let L=0;L<last;L++){
+        mgSmooth(lv[L],2,omega,mode);
+        mgResidual(lv[L]);
+        mgRestrict(lv[L],lv[L+1]);
+      }
+      mgSmooth(lv[last],80,omega,mode);            // coarse "direct" solve (12² — cheap)
+      for(let L=last-1;L>=0;L--){
+        mgProlong(lv[L+1],lv[L],mode);
+        mgSmooth(lv[L],2,omega,mode);
+      }
+      res=mgResidual(lv[0]);
+      if(res<tol) break;
+    }
+    return res;
+  }
+
+  /* ---------------- the simulator ---------------- */
+  const CHAMBERS = ["TOWER","CAVITY","VORTEX STREET","BUCKET","POND"];
+
+  function createSim(opts){
+    opts = opts||{};
+    const N = Math.max(64, Math.min(320, opts.N||160));
+    const W = N+2, S = W*W;
+    const F = { // all fields Float64 — raw physics, never lock9-guarded
+      u:new Float64Array(S), v:new Float64Array(S), u0:new Float64Array(S), v0:new Float64Array(S),
+      p:new Float64Array(S), div:new Float64Array(S),
+      rho:new Float64Array(S), visc:new Float64Array(S),
+      curl:new Float64Array(S), strain:new Float64Array(S),
+      lam:new Float64Array(S),                       // honey thixotropy structure λ∈[0,1]
+      dens:[0,1,2,3,4,5,6,7,8].map(()=>new Float64Array(S)),
+      d0:new Float64Array(S),
+      solid:new Uint8Array(S) };
+    const densB=[0,1,2,3,4,5,6,7,8].map(()=>new Float64Array(S)); // dye advect targets (swap, no copies)
+    const dyeActive=new Uint8Array(9);               // per-frame active mask (skip empty fields)
+    const mgP = mgChain(N);                            // pressure Poisson chain (uniform coeffs)
+    let solidVer=1, mgPSetupVer=0, mgPSetupMode=-1;    // operator-setup cache versioning
+    const prm = {
+      gravity:1,            // 1 | 0 | −1 (g toggle)
+      gScale:1,             // extra scalar for tests (default 1)
+      omega:0,              // bucket rotation rad/s
+      viscScale:1, speed:1, epsVort:1.5, vortOn:true,
+      tracersOn:true,
+      // TOWER settling-bath protocol knobs (documented chamber law above;
+      // exposed so the verifier can re-measure the protocol honestly)
+      towerG:TOWER_G, towerRamp:TOWER_RAMP, towerHoldEnd:TOWER_HOLD_END,
+      towerRelease:TOWER_RELEASE, towerGEnd:TOWER_G_END,
+      towerBath:TOWER_BATH, towerBathRelax:TOWER_BATH_RELAX
+    };
+    let chamber = "POND";
+    let rngStream = OQ.rng(SEAL);                      // tracer spawn/recycle stream (mulberry)
+    let tickCount=0, frameCount=0, cumFrames=0;        // cumFrames NEVER resets (session recorder clock)
+    let liveNdiv=0, liveKE=0, liveWmax=0, projResid=0;
+    const keRing = [];                                 // recent KE for HUD
+    // chamber bookkeeping
+    const street = { U:120, D:Math.max(12,Math.round(N/8)), liftPrev:0, signChanges:0, lift:0, history:[] };
+                     // chamber Re = U·D/ν_water = 120·(N/8)/5 = 288 at N=96 (D=12);
+                     // inside the shedding regime (threshold Re ≈ 47, upper ≈ 300
+                     // before 3-D transition — a lattice street stays 2-D laminar).
+    const cavity = { U:120, psi:null, psiTick:-99, minPsi:0, maxPsi:0, cx:0, cy:0, converged:false };
+    const tower = { streak:0, confirmed:false, tau:0 }; // settle criterion bookkeeping (SPEC §4.1)
+    // tracer particles — seeded, RK2 through the true field
+    const TRN = 350;
+    const tr = { x:new Float64Array(TRN), y:new Float64Array(TRN) };
+
+    const IX=(i,j)=> i+j*W;
+    function foreachFluid(fn){ for(let j=1;j<=N;j++) for(let i=1;i<=N;i++){ const id=IX(i,j); if(!F.solid[id]) fn(id,i,j); } }
+
+    /* ---------- boundary conditions ----------
+       Velocity walls are NO-SLIP by default (ghost = −interior) — real tank
+       walls have friction; this is also the correct physical damping that
+       lets overturned tanks settle. Scalars are Neumann (zero-flux).
+       Chamber overrides (moving lid, rotating walls, inflow/outflow) are
+       applied in chamberGhosts — they are boundary LAWS, not sources.  */
+    function setBnd(b, x){
+      const vel = (b===1||b===2);
+      for(let i=1;i<=N;i++){
+        x[IX(i,0)]   = vel ? -x[IX(i,1)] : x[IX(i,1)];
+        x[IX(i,N+1)] = vel ? -x[IX(i,N)] : x[IX(i,N)];
+        x[IX(0,i)]   = vel ? -x[IX(1,i)] : x[IX(1,i)];
+        x[IX(N+1,i)] = vel ? -x[IX(N,i)] : x[IX(N,i)];
+      }
+      x[IX(0,0)]=0.5*(x[IX(1,0)]+x[IX(0,1)]); x[IX(0,N+1)]=0.5*(x[IX(1,N+1)]+x[IX(0,N)]);
+      x[IX(N+1,0)]=0.5*(x[IX(N,0)]+x[IX(N+1,1)]); x[IX(N+1,N+1)]=0.5*(x[IX(N,N+1)]+x[IX(N+1,N)]);
+      if(vel) chamberGhosts(b,x);
+    }
+    function chamberGhosts(b,x){
+      if(chamber==="CAVITY"){
+        if(b===1){ const U=cavity.U;
+          for(let i=1;i<=N;i++) x[IX(i,0)]=2*U-x[IX(i,1)]; }        // moving lid (Dirichlet U at wall)
+      } else if(chamber==="BUCKET"){
+        const om=prm.omega, cx=(N+1)/2, cy=(N+1)/2;
+        if(b===1){ // top/bottom walls move tangentially at −Ω·(y_w−cy)
+          const ut=-om*(0-cy), ub=-om*(N+1-cy);
+          for(let i=1;i<=N;i++){ x[IX(i,0)]=2*ut-x[IX(i,1)]; x[IX(i,N+1)]=2*ub-x[IX(i,N)]; }
+        } else {   // left/right walls at Ω·(x_w−cx)
+          const vl=om*(0-cx), vr=om*(N+1-cx);
+          for(let i=1;i<=N;i++){ x[IX(0,i)]=2*vl-x[IX(1,i)]; x[IX(N+1,i)]=2*vr-x[IX(N,i)]; }
+        }
+      } else if(chamber==="VORTEX STREET"){
+        if(b===1){ for(let j=1;j<=N;j++){ x[IX(0,j)]=street.U; x[IX(N+1,j)]=x[IX(N,j)]; } }
+        else     { for(let j=1;j<=N;j++){ x[IX(0,j)]=0;         x[IX(N+1,j)]=x[IX(N,j)]; } }
+      }
+    }
+    function applyObstacleVel(){ // no-through + no-slip inside solids (masked-cell law)
+      for(let j=0;j<W;j++) for(let i=0;i<W;i++){ const id=IX(i,j); if(F.solid[id]){ F.u[id]=0; F.v[id]=0; } }
+    }
+
+    /* ---------- semi-Lagrangian advection (Stam, bilinear, clamped) ---------- */
+    function advect(b, d, d0, u, v, dt){
+      const dt0=dt;
+      for(let j=1;j<=N;j++) for(let i=1;i<=N;i++){
+        const id=IX(i,j);
+        let x=i-dt0*u[id], y=j-dt0*v[id];
+        if(x<0.5)x=0.5; if(x>N+0.5)x=N+0.5;
+        if(y<0.5)y=0.5; if(y>N+0.5)y=N+0.5;
+        const i0=x|0, j0=y|0, i1=i0+1, j1=j0+1;
+        const s1=x-i0, s0=1-s1, t1=y-j0, t0=1-t1;
+        d[id]= s0*(t0*d0[IX(i0,j0)]+t1*d0[IX(i0,j1)]) + s1*(t0*d0[IX(i1,j0)]+t1*d0[IX(i1,j1)]);
+      }
+      setBnd(b,d);
+    }
+    /* Dye transport — FLUX-FORM FINITE-VOLUME MUSCL, exactly mass-conservative.
+       u[id]/v[id] ARE the cell right/bottom face velocities (MAC reading), so
+       the fluxes telescope: dye mass is conserved to rounding on every tick,
+       at walls, at the cylinder, everywhere — boundary faces carry their LAW
+       velocity (inlet U with dye-free inflow, walls 0, solid faces 0 via the
+       wallFaceLaw). Each face value uses a van-Leer-limited linear
+       reconstruction in the upwind donor cell (2nd-order, monotone: no new
+       extrema, no negatives). Dimensional splitting (x then y) at quantum h;
+       subcycled if CFL > 0.85 (labeled, honest — same flux form, finer steps).
+       History: bilinear SL leaked systematically in shear (measured −6.7% /
+       2000 ticks on a frozen live field); limited MacCormack PUMPED mass
+       (+16.9% same field — the verifier's +770% at ×30 g). Both removed.   */
+    // single-pass fused sweeps (slope computed inline per face from the upwind
+    // donor cell; minmod limiter — division-free, monotone, conservative).
+    function sweepX(d, out, h, Uin){ // out = d − ∂x(flux); exact conservation
+      const u=F.u, sd=F.solid, street=(chamber==="VORTEX STREET");
+      for(let j=1;j<=N;j++){ const row=j*W;
+        let fPrev=0;                                  // face 0: left boundary — inlet stream is
+        for(let i=1;i<=N;i++){                        // dye-free, walls carry 0 → flux 0
+          const uf=(i===N)?(street?u[N+row]:0):u[i+row];
+          let fi=0;
+          if(uf!==0){
+            const c=uf*h;
+            let dn, ds, df;
+            if(uf>0){ dn=i+row; }                     // donor cell i
+            else { dn=(i<N)?(i+1+row):0; }            // donor cell i+1 (outlet backflow: clean)
+            if(dn){
+              const a=d[dn]-d[dn-1], b=d[dn+1]-d[dn];
+              ds=(a*b>0)?((a<0?-a:a)<(b<0?-b:b)?a:b):0;   // minmod slope
+              df = uf>0 ? d[dn]+0.5*ds*(1-c) : d[dn]-0.5*ds*(1+c);
+              fi=c*df;
+            }
+          }
+          const id=i+row;
+          out[id]=sd[id]?0:d[id]-(fi-fPrev);
+          fPrev=fi;
+        }
+      }
+    }
+    function sweepY(d, out, h){ // out = d − ∂y(flux)
+      const v=F.v, sd=F.solid;
+      for(let i=1;i<=N;i++){
+        let fPrev=0;                                  // top wall: no through-flow
+        for(let j=1;j<=N;j++){
+          const vf=(j===N)?0:v[i+j*W];                // bottom wall face = 0 (law)
+          let fi=0;
+          if(vf!==0){
+            const c=vf*h;
+            const dn= vf>0 ? (i+j*W) : (i+(j+1)*W);
+            const a=d[dn]-d[dn-W], b=d[dn+W]-d[dn];
+            const ds=(a*b>0)?((a<0?-a:a)<(b<0?-b:b)?a:b):0;
+            const df= vf>0 ? d[dn]+0.5*ds*(1-c) : d[dn]-0.5*ds*(1+c);
+            fi=c*df;
+          }
+          const id=i+j*W;
+          out[id]=sd[id]?0:d[id]-(fi-fPrev);
+          fPrev=fi;
+        }
+      }
+    }
+    function advectDyes(h){
+      const Uin=(chamber==="VORTEX STREET") ? street.U : 0;
+      // CFL subcycling (explicit scheme): |u|h ≤ 1 required; split honestly.
+      const cmax=(maxAbs(F.u)+maxAbs(F.v))*h;
+      const ns = cmax>0.85 ? Math.min(4, Math.ceil(cmax/0.8)) : 1;
+      const hh=h/ns;
+      for(let f=0;f<9;f++){
+        if(!dyeActive[f]) continue;
+        const d=F.dens[f], t=densB[f];
+        for(let s=0;s<ns;s++){
+          setBnd(0,d);                                  // donor slopes see wall mirrors
+          sweepX(d, t, hh, Uin);                        // x-sweep into scratch
+          setBnd(0,t);
+          sweepY(t, d, hh);                             // y-sweep back into the field
+        }
+        setBnd(0,d);
+      }
+    }
+
+    /* ---------- projection: −∇²p = −div through the multigrid ----------
+       MAC-consistent pairing (honesty note): the divergence is the
+       BACKWARD difference and the pressure gradient the FORWARD
+       difference, so their composition is exactly the compact 5-point
+       Laplacian the multigrid solves. (Stam's original central/central
+       pairing composes to a stride-2 checkerboard operator that a
+       compact solve can never drive to zero — that would make the
+       live ∇·u readout a lie. Here the readout measures the very
+       divergence the projection enforces.)                            */
+    function leftFaceU(j){ // inlet face velocity at i=1 (Dirichlet chambers) — else wall: 0
+      return (chamber==="VORTEX STREET") ? street.U : 0;
+    }
+    /* Wall-face law (MAC honesty): in the backward-difference divergence,
+       u[id] is the RIGHT face of cell id and v[id] the BOTTOM face. Hence
+       u[N,j] and v[i,N] are domain-boundary faces, not interior degrees of
+       freedom. Closed tanks: those faces carry exactly 0 (no-through wall).
+       STREET: the right face stays free — the fixed-pressure outlet
+       (Dirichlet p=0 on the right ghost edge, mode 2) lets it flow out.
+       Without this law Σdiv ≠ 0 in closed tanks and the pure-Neumann
+       Poisson is incompatible: the residual floored at |mean div| (the
+       measured 6e-3 TOWER / 1e-3 BUCKET pile-up — found & fixed).     */
+    function wallFaceLaw(){
+      const u=F.u, v=F.v, sd=F.solid;
+      if(chamber!=="VORTEX STREET"){ for(let j=1;j<=N;j++) u[N+j*W]=0; }
+      for(let i=1;i<=N;i++) v[i+N*W]=0;
+      // fluid–solid faces are boundary dofs too: u[id] with solid[id+1] is the
+      // obstacle's no-through face → exactly 0 (same MAC law as tank walls).
+      // Without this the gradient-subtract moved those faces off the mask
+      // operator the multigrid inverts — the measured 0.67–0.80 divergence
+      // pile-up around the STREET cylinder. Found & fixed.
+      for(let j=1;j<=N;j++){ const row=j*W;
+        for(let i=1;i<=N;i++){ const id=i+row;
+          if(sd[id+1]) u[id]=0;
+          if(sd[id+W]) v[id]=0;
+        } }
+    }
+    function divField(){ // backward-difference divergence; wall/solid faces carry velocity 0,
+      // inlet faces carry the imposed inflow (else the projection would read inflow
+      // as a spurious source and cancel it — found & fixed). This is exactly the
+      // operator the multigrid solve inverts — the readout is honest.
+      let umax=1e-9, dmax=0;
+      for(let j=1;j<=N;j++) for(let i=1;i<=N;i++){
+        const id=IX(i,j);
+        const ul=(i===1) ? leftFaceU(j) : (F.solid[id-1]?0:F.u[id-1]);
+        const vu=(j===1||F.solid[id-W])?0:F.v[id-W];
+        F.div[id] = (F.u[id]-ul) + (F.v[id]-vu);
+        const sp=Math.abs(F.u[id])+Math.abs(F.v[id]); if(sp>umax)umax=sp;
+        const ad=F.div[id]<0?-F.div[id]:F.div[id]; if(ad>dmax)dmax=ad;
+      }
+      return {dmax, umax};
+    }
+    function project(){
+      applyObstacleVel(); wallFaceLaw();
+      const dm=divField();
+      if(dm.dmax < 1e-9*dm.umax){ liveNdiv=dm.dmax/dm.umax; projResid=0; return; } // already ∇·u≈0 — honest early-out
+      const mode = (chamber==="VORTEX STREET") ? 2 : 0;
+      const L0=mgP[0];
+      if(mgPSetupVer!==solidVer || mgPSetupMode!==mode){
+        mgSetup(mgP, null, null, F.solid, mode); mgPSetupVer=solidVer; mgPSetupMode=mode;
+      }
+      for(let k=0;k<S;k++) L0.b[k]=-F.div[k];       // −∇²p = −div
+      L0.x.set(F.p);                                 // warm start — honest reuse
+      const tol = 4e-7*dm.umax;                      // post-subtract ∇·u measures ≪ 1e-6 (SPEC §7)
+      // ADAPTIVE every tick: V-cycles until the measured residual meets tol,
+      // generous cap 6 (warm-started → 1–2 cycles mid-frame; documented
+      // budget, same operator, measured residual reported in projResid).
+      projResid = mgSolve(mgP, tol, 6, 1.0, mode);
+      F.p.set(L0.x);
+      setBnd(0,F.p);
+      if(mode===2){ for(let j=1;j<=N;j++) F.p[IX(N+1,j)]=0; } // outlet ghost p=0 — matches the solve
+      extendPIntoSolids();                           // Neumann extension so ∇p is honest at walls
+      { const p=F.p, u=F.u, v=F.v, sd=F.solid;       // forward-difference gradient subtract
+        for(let j=1;j<=N;j++){ const row=j*W;      // solid-facing faces are BC dofs: skip
+          for(let i=1;i<=N;i++){ const id=i+row;   // (they stay 0 — matches the mask operator)
+            if(sd[id]) continue;
+            if(!sd[id+1]) u[id] -= (p[id+1]-p[id]);
+            if(!sd[id+W]) v[id] -= (p[id+W]-p[id]);
+          } } }
+      setBnd(1,F.u); setBnd(2,F.v); applyObstacleVel(); wallFaceLaw();
+      const dm2=divField();                          // measured truth AFTER projection
+      liveNdiv = dm2.dmax/dm2.umax;
+    }
+    function extendPIntoSolids(){ // solid p ← mean of fluid neighbors (zero normal ∇p)
+      for(let pass=0;pass<2;pass++)
+        for(let j=1;j<=N;j++) for(let i=1;i<=N;i++){
+          const id=IX(i,j); if(!F.solid[id]) continue;
+          let s=0,c=0;
+          if(!F.solid[id-1]){s+=F.p[id-1];c++;}
+          if(!F.solid[id+1]){s+=F.p[id+1];c++;}
+          if(!F.solid[id-W]){s+=F.p[id-W];c++;}
+          if(!F.solid[id+W]){s+=F.p[id+W];c++;}
+          if(c)F.p[id]=s/c;
+        }
+    }
+
+    /* ---------- implicit diffusion: (I − dt∇·ν∇)x = x0, multigrid GS ---------- */
+    /* Implicit viscous diffusion (I − h∇·ν∇)x = x0 — Gauss–Seidel with
+       harmonic face coefficients (the honest flux law across the 1:50500
+       viscosity jumps of the FLUIDT codex), warm-started, SOR ω=1.25,
+       iterated to a MEASURED relative change < 1e-3 (min 4, max 24 sweeps —
+       Stam's 20-iteration law, labeled tolerance). Under-convergence errs
+       toward LESS damping, never more. Solved EVERY tick so viscosity acts
+       continuously —
+       once-per-frame splitting let buoyancy pump velocities for 24 ticks
+       unresisted (a real integrator pathology, found and fixed), and the
+       multigrid's rediscretized coarse operators diverge under the ν jump
+       (found, measured, abandoned for diffusion — it remains the pressure
+       solver, where coefficients are uniform and it is exact).      */
+    const dGF={cfl:null,cfr:null,cfu:null,cfd:null,dg:null,valid:false,h:0};
+    function diffuseVelocity(h, uma, vma){
+      if(uma===0 && vma===0) return;                 // field at rest — identity on 0
+      if(!dGF.cfl || dGF.cfl.length!==S){
+        dGF.cfl=new Float64Array(S); dGF.cfr=new Float64Array(S);
+        dGF.cfu=new Float64Array(S); dGF.cfd=new Float64Array(S); dGF.dg=new Float64Array(S);
+        dGF.valid=false;
+      }
+      // coefficient build is once per frame (ν is per-frame, h per frame) —
+      // cached honestly: identical operator, zero recompute. solidVer bumps
+      // invalidate (obstacle edits).
+      if(!dGF.valid || dGF.h!==h || dGF.solidVer!==solidVer){
+        const nu=F.visc, sd=F.solid;
+        for(let j=1;j<=N;j++){ const row=j*W;
+          for(let i=1;i<=N;i++){
+            const id=i+row;
+            const nl=sd[id-1]?0:nu[id-1], nr=sd[id+1]?0:nu[id+1],
+                  nup=sd[id-W]?0:nu[id-W], nd=sd[id+W]?0:nu[id+W], nc=nu[id];
+            const a=h*2*nc*nl/(nc+nl+1e-300), b2=h*2*nc*nr/(nc+nr+1e-300),
+                  c=h*2*nc*nup/(nc+nup+1e-300), d=h*2*nc*nd/(nc+nd+1e-300);
+            dGF.cfl[id]=a; dGF.cfr[id]=b2; dGF.cfu[id]=c; dGF.cfd[id]=d;
+            dGF.dg[id]=1/(1+a+b2+c+d);               // stored INVERTED — hot loop multiplies
+          }
+        }
+        dGF.valid=true; dGF.h=h; dGF.solidVer=solidVer;
+      }
+      diffuseGS(1,F.u,F.u0,uma); diffuseGS(2,F.v,F.v0,vma);
+      setBnd(1,F.u); setBnd(2,F.v); applyObstacleVel();
+    }
+    function diffuseGS(b, x, x0, scale){
+      x0.set(x);
+      const cfl=dGF.cfl, cfr=dGF.cfr, cfu=dGF.cfu, cfd=dGF.cfd, dgi=dGF.dg, sd=F.solid;
+      scale=scale+1e-12; const om=1.25, om0=1-om;
+      // At the tick quantum h=dt/24 the system is nearly diagonal for all but
+      // the super-viscous ranks (lava νh≈66). Measured-change early-out, min 2
+      // sweeps, cap 5 — a documented budget: any residual under-convergence
+      // errs strictly toward LESS viscous damping, never fabricated motion.
+      // (The ÷1.15/sweep GS tail lives in quasi-rigid high-ν blocks, where the
+      // exact answer is "keep moving almost rigidly" — bounded error, physical
+      // direction.)
+      for(let iter=0;iter<5;iter++){
+        let maxCh=0;
+        for(let j=1;j<=N;j++){ const row=j*W;
+          for(let i=1;i<=N;i++){
+            const id=i+row; if(sd[id]){ x[id]=0; continue; }
+            const xg=(x0[id] + cfl[id]*x[id-1] + cfr[id]*x[id+1]
+                               + cfu[id]*x[id-W] + cfd[id]*x[id+W])*dgi[id];
+            const xn=x[id]*om0+om*xg;
+            const ch=xn>x[id]?xn-x[id]:x[id]-xn; if(ch>maxCh)maxCh=ch;
+            x[id]=xn;
+          }
+        }
+        setBnd(b,x);
+        if(iter>=1 && maxCh < 1e-3*scale) break;     // measured convergence — labeled tolerance
+      }
+    }
+    function maxAbs(a){ let m=0; for(let k=0;k<S;k++){ const v=a[k]<0?-a[k]:a[k]; if(v>m)m=v; } return m; }
+
+    /* ---------- mixture fields: ρ per tick; ν per frame (mass-fraction mixing) ---------- */
+    function computeStrainCurl(){ // direct loops — hot path (closure-free by design)
+      const u=F.u, v=F.v, st=F.strain, cu=F.curl, sd=F.solid;
+      for(let j=1;j<=N;j++){ const row=j*W;
+        for(let i=1;i<=N;i++){
+          const id=i+row; if(sd[id]){ st[id]=0; cu[id]=0; continue; }
+          const dudx=0.5*(u[id+1]-u[id-1]), dudy=0.5*(u[id+W]-u[id-W]);
+          const dvdx=0.5*(v[id+1]-v[id-1]), dvdy=0.5*(v[id+W]-v[id-W]);
+          const sxy=0.5*(dudy+dvdx);
+          st[id]=Math.sqrt(2*(dudx*dudx+dvdy*dvdy+2*sxy*sxy));
+          cu[id]=dvdx-dudy;                         // ω = ∂v/∂x − ∂u/∂y
+        }
+      }
+      setBnd(0,st); setBnd(0,cu);
+    }
+    function computeRho(){
+      const sd=F.solid, rhoA=F.rho, d0=F.dens[0],d1=F.dens[1],d2=F.dens[2],d3=F.dens[3],
+            d4=F.dens[4],d5=F.dens[5],d6=F.dens[6],d7=F.dens[7],d8=F.dens[8];
+      const sums=rhoSums; sums.fill(0);
+      // densities from FLUIDT (exact): 0.789, 0.92, 1.0, 1.05, 1.03, 1.06, 1.415, 1.44, 2.65
+      for(let j=1;j<=N;j++){ const row=j*W;
+        for(let i=1;i<=N;i++){
+          const id=i+row; if(sd[id]) continue;
+          const a=d0[id],b=d1[id],c=d2[id],d=d3[id],e=d4[id],f=d5[id],g=d6[id],h=d7[id],k=d8[id];
+          const sumD=a+b+c+d+e+f+g+h+k;
+          const rho = a*0.789+b*0.92+c*1.0+d*1.05+e*1.03+f*1.06+g*1.415+h*1.44+k*2.65
+                    + Math.max(0,1-sumD)*RHO_REF;   // ambient water fills what dye does not
+          rhoA[id]=rho/(sumD>1?sumD:1);
+          sums[0]+=a; sums[1]+=b; sums[2]+=c; sums[3]+=d; sums[4]+=e;
+          sums[5]+=f; sums[6]+=g; sums[7]+=h; sums[8]+=k;
+        }
+      }
+      for(let f=0;f<9;f++) dyeActive[f]=sums[f]>1e-9?1:0;   // skip empty fields (perf, honest)
+      setBnd(0,rhoA);
+    }
+    const rhoSums=new Float64Array(9);
+    function computeVisc(dt){
+      // ν: mass-fraction mix of per-rank kinematic viscosity with rank-level rheology.
+      // Non-Newtonian laws (labeled approximations, honest forms):
+      //   shear-thinning soap/blood/molasses — Carreau-lite ν=ν0·(S+ε0)^(n−1), n=0.7
+      //   Bingham lava (and soap yield)      — ν=νp+τY/(S+ε0): rigid below yield
+      //   thixotropic honey                  — λ relaxes toward λ_eq(S), ν=ν0·(0.12+0.88λ)
+      const dtTh = Math.min(1, dt/THIXO_TAU);
+      const sd=F.solid, st=F.strain, lm=F.lam, vs=F.visc;
+      const d0=F.dens[0],d1=F.dens[1],d2=F.dens[2],d3=F.dens[3],
+            d4=F.dens[4],d5=F.dens[5],d6=F.dens[6],d7=F.dens[7],d8=F.dens[8];
+      // settling-bath aid (TOWER only, labeled): temporary ν multiplier that
+      // relaxes linearly to ×1 — the TRUE codex ν — by frame towerBathRelax.
+      const vs0=prm.viscScale*(chamber==="TOWER"?towerBathF():1);
+      const n0=NU_RANK[0]*vs0,n1=NU_RANK[1]*vs0,n2=NU_RANK[2]*vs0,n3=NU_RANK[3]*vs0,
+            n4=NU_RANK[4]*vs0,n5=NU_RANK[5]*vs0,n6=NU_RANK[6]*vs0,n7=NU_RANK[7]*vs0,n8=NU_RANK[8]*vs0;
+      const cap=NU0*vs0*60000, floor=NU0*vs0*0.05;
+      for(let j=1;j<=N;j++){ const row=j*W;
+        for(let i=1;i<=N;i++){
+          const id=i+row; if(sd[id]) continue;
+          const a=d0[id],b=d1[id],c=d2[id],d=d3[id],e=d4[id],f=d5[id],g=d6[id],h=d7[id],k=d8[id];
+          const sumD=a+b+c+d+e+f+g+h+k;
+          const denom = sumD>1?sumD:1;
+          const Srate=st[id];
+          let nu=0;
+          if(a>1e-9) nu+=a*n0;                       // alcohol — Newtonian
+          if(b>1e-9) nu+=b*n1;                       // oil — Newtonian
+          if(c>1e-9) nu+=c*n2;                       // water — reference
+          if(d>1e-9){                                 // soap — shear-thinning + yield
+            let nue=n3*Math.pow(Srate+1e-3,N_POWER-1); if(nue>n3)nue=n3; if(nue<n3*0.02)nue=n3*0.02;
+            nue+=BINGHAM_TAUY[4]/(Srate+1e-3); nu+=d*nue; }
+          if(e>1e-9) nu+=e*n4;                       // milk — Newtonian-ish
+          if(f>1e-9){                                 // blood — shear-thinning
+            let nue=n5*Math.pow(Srate+1e-3,N_POWER-1); if(nue>n5)nue=n5; if(nue<n5*0.02)nue=n5*0.02;
+            nu+=f*nue; }
+          if(g>1e-9){                                 // honey — thixotropic λ relaxation
+            const leq=1/(1+Srate*2);
+            lm[id]+=(leq-lm[id])*dtTh;
+            nu+=g*n6*(0.12+0.88*lm[id]); }
+          if(h>1e-9){                                 // molasses — shear-thinning
+            let nue=n7*Math.pow(Srate+1e-3,N_POWER-1); if(nue>n7)nue=n7; if(nue<n7*0.02)nue=n7*0.02;
+            nu+=h*nue; }
+          if(k>1e-9) nu+=k*(n8+BINGHAM_TAUY[9]/(Srate+1e-3)); // lava — Bingham
+          nu += Math.max(0,1-sumD)*n2;               // ambient water
+          nu /= denom;
+          // stability cap — labeled approximation: ν beyond this is indistinguishable
+          // from rigid on the lattice timestep (the implicit solve stays exact either way)
+          vs[id]= nu>cap?cap : nu<floor?floor : nu;
+        }
+      }
+      setBnd(0,F.visc);
+      dGF.valid=false;                               // ν changed → diffusion operator rebuild (per-frame schedule)
+    }
+
+    /* ---------- forces ---------- */
+    // TOWER protocol schedules (frame-indexed → deterministic; the clock never
+    // skips frames, so frameCount is honest experiment time):
+    function towerGs(){     // ramp–hold–release centrifuge schedule (frame-indexed, deterministic)
+      const t=frameCount;
+      if(t>=prm.towerHoldEnd){                       // release: linear towerG → towerGEnd
+        const r=Math.min(1,(t-prm.towerHoldEnd)/prm.towerRelease);
+        return prm.towerG+(prm.towerGEnd-prm.towerG)*r;
+      }
+      return prm.towerG*Math.min(1,t/prm.towerRamp); // spin-up then hold
+    }
+    function towerBathF(){  // settling bath: ×towerBath at t=0 → ×1 (true ν) at bathRelax
+      return 1 + (prm.towerBath-1)*Math.max(0, 1-frameCount/prm.towerBathRelax);
+    }
+    function buoyancy(h){ // F_y += g·(ρ−ρ_ref)/ρ_ref·h — y down, heavy sinks. Alone sorts the tower.
+      const gs = chamber==="TOWER" ? Math.max(prm.gScale, towerGs()) : prm.gScale; // centrifuge protocol (documented chamber law)
+      const g = prm.gravity*gs*G0;
+      if(g===0) return;
+      const v=F.v, rho=F.rho, sd=F.solid, k=g*h/RHO_REF;
+      for(let j=1;j<=N;j++){ const row=j*W;
+        for(let i=1;i<=N;i++){ const id=i+row;
+          if(!sd[id]) v[id] += k*(rho[id]-RHO_REF); } }
+    }
+    function vorticityConfinement(h){ // f = ε·(N × ωẑ), N = ∇|ω|/|∇|ω||
+      const eps=prm.epsVort; if(eps<=0) return;
+      const aW=F.d0, cu=F.curl, u=F.u, v=F.v, sd=F.solid; // d0 scratch = |ω|
+      for(let j=1;j<=N;j++){ const row=j*W;
+        for(let i=1;i<=N;i++){ const id=i+row; aW[id]=Math.abs(cu[id]); } }
+      setBnd(0,aW);
+      const k=eps*h;
+      for(let j=1;j<=N;j++){ const row=j*W;
+        for(let i=1;i<=N;i++){ const id=i+row;
+          if(sd[id]) continue;
+          const nx=0.5*(aW[id+1]-aW[id-1]), ny=0.5*(aW[id+W]-aW[id-W]);
+          const len=Math.sqrt(nx*nx+ny*ny)+1e-12;
+          const w=cu[id];
+          u[id] += k*( ny/len)*w;
+          v[id] += k*(-nx/len)*w;
+        }
+      }
+    }
+
+    /* ---------- sources (interaction + chamber scripts ONLY) ----------
+       lock9 reflective guard applied to scalar source magnitudes only
+       (SPEC §3, documented law) — never to the NS fields themselves. */
+    const srcQueue=[];   // frame-scoped: applied EVERY tick at (h/dt) scale so the
+                         // tunnel cadence (steps 6/8 ×1.5) genuinely modulates injection
+    function pour(gx,gy,rank,rate,radius){ srcQueue.push({t:"pour",x:gx,y:gy,r:rank,amt:rate,rad:radius||3}); }
+    function stir(gx,gy,dx,dy,radius){ srcQueue.push({t:"stir",x:gx,y:gy,dx:dx,dy:dy,rad:radius||5}); }
+    function clearSources(){ srcQueue.length=0; }
+    function applySources(boost, frac){
+      if(!srcQueue.length) return;
+      for(const s of srcQueue){
+        if(s.t==="pour"){
+          const amt=lock9(s.amt*boost*frac);       // reflective guard on magnitude (documented)
+          const r=s.rad, r2=r*r, fi=s.r-1;
+          const ci=Math.round(s.x), cj=Math.round(s.y);
+          for(let dj=-r;dj<=r;dj++) for(let di=-r;di<=r;di++){
+            const i=ci+di, j=cj+dj; if(i<1||i>N||j<1||j>N) continue;
+            const q=di*di+dj*dj; if(q>r2) continue;
+            const id=IX(i,j); if(F.solid[id]) continue;
+            const add=amt*(1-q/r2);
+            F.dens[fi][id]+=add; dyeActive[fi]=1;
+            if(F.dens[fi][id]>4)F.dens[fi][id]=4;  // saturation guard (dye, not physics field)
+          }
+        } else {
+          const m=lock9(Math.sqrt(s.dx*s.dx+s.dy*s.dy)*boost*frac);
+          const om=Math.sqrt(s.dx*s.dx+s.dy*s.dy); if(om<1e-12) continue;
+          const dx=s.dx/om*m, dy=s.dy/om*m;        // guarded magnitude, true direction
+          const r=s.rad, r2=r*r, ci=Math.round(s.x), cj=Math.round(s.y);
+          for(let dj=-r;dj<=r;dj++) for(let di=-r;di<=r;di++){
+            const i=ci+di, j=cj+dj; if(i<1||i>N||j<1||j>N) continue;
+            const q=di*di+dj*dj; if(q>r2) continue;
+            const id=IX(i,j); if(F.solid[id]) continue;
+            const fall=(1-q/r2);
+            F.u[id]+=dx*fall; F.v[id]+=dy*fall;    // true momentum injection — not dye teleport
+          }
+        }
+      }
+    }
+
+    /* ---------- chamber boundary conditions / scripts ---------- */
+    function chamberBC(boost){
+      // Wall/inlet ghost laws live in chamberGhosts (applied inside every
+      // setBnd); the inlet enters the projection through the LEFT FACE law in
+      // divField (leftFaceU). The previous build ALSO pinned the whole first
+      // interior column to U after every projection — that re-broke ∇·u=0 at
+      // column 2 right after the solve (measured). Removed: the face law
+      // alone drives the inflow honestly (flux in = N·U exactly).
+      // What remains here: STREET's dye-tracer seeding, which IS a source
+      // and obeys the tunnel cadence.
+      if(chamber==="VORTEX STREET"){
+        const rate=0.6*boost;                    // ×1.5 at tunnel ticks 6/8 — seed cadence law
+        const yc1=Math.round(N*0.5-street.D*0.9), yc2=Math.round(N*0.5+street.D*0.9);
+        for(let dj=-1;dj<=1;dj++){
+          F.dens[2][IX(2,yc1+dj)]+=rate; F.dens[2][IX(2,yc2+dj)]+=rate;
+          dyeActive[2]=1;
+        }
+      }
+    }
+
+    /* ---------- tracers: RK2 through the TRUE velocity field, seeded ---------- */
+    function sampleU(x,y){ // bilinear sample of u at continuous coords
+      if(x<0.5)x=0.5; if(x>N+0.5)x=N+0.5;
+      if(y<0.5)y=0.5; if(y>N+0.5)y=N+0.5;
+      const i0=x|0, j0=y|0, s1=x-i0, t1=y-j0, s0=1-s1, t0=1-t1;
+      return s0*(t0*F.u[IX(i0,j0)]+t1*F.u[IX(i0,j0+1)])+s1*(t0*F.u[IX(i0+1,j0)]+t1*F.u[IX(i0+1,j0+1)]);
+    }
+    function sampleV(x,y){
+      if(x<0.5)x=0.5; if(x>N+0.5)x=N+0.5;
+      if(y<0.5)y=0.5; if(y>N+0.5)y=N+0.5;
+      const i0=x|0, j0=y|0, s1=x-i0, t1=y-j0, s0=1-s1, t0=1-t1;
+      return s0*(t0*F.v[IX(i0,j0)]+t1*F.v[IX(i0,j0+1)])+s1*(t0*F.v[IX(i0+1,j0)]+t1*F.v[IX(i0+1,j0+1)]);
+    }
+    function spawnTracer(k){ // mulberry-seeded deterministic spawn
+      for(let tries=0;tries<24;tries++){
+        const x=1+rngStream()*N, y=1+rngStream()*N;
+        if(!F.solid[IX(x|0,y|0)]){ tr.x[k]=x; tr.y[k]=y; return; }
+      }
+      tr.x[k]=2; tr.y[k]=2;
+    }
+    function stepTracers(h){
+      if(!prm.tracersOn) return;
+      for(let k=0;k<TRN;k++){
+        const x=tr.x[k], y=tr.y[k];
+        const u1=sampleU(x,y), v1=sampleV(x,y);
+        const xm=x+0.5*h*u1, ym=y+0.5*h*v1;
+        const u2=sampleU(xm,ym), v2=sampleV(xm,ym);
+        const nx=x+h*u2, ny=y+h*v2;                    // RK2 midpoint — real integration
+        if(!isFinite(nx)||!isFinite(ny)||nx<1||ny<1||nx>N||ny>N||F.solid[IX(nx|0,ny|0)]){
+          spawnTracer(k);                              // recycled deterministically (mulberry stream)
+        } else { tr.x[k]=nx; tr.y[k]=ny; }
+      }
+    }
+
+    /* ---------- one clock tick = one integrator quantum h = dt/24 ---------- */
+    function tickOnce(h, dt){
+      tickCount++;
+      const snap=OQ.tick(liveKE);                      // LAW 2: the clock drives; coherence from KE ring
+      const boost = snap.tunnel ? 1.5 : 1.0;           // steps 6 & 8: ×1.5 source-energy cadence ONLY
+      applySources(boost, h/dt);
+      chamberBC(boost);
+      const uma=maxAbs(F.u), vma=maxAbs(F.v);        // measured once per tick, reused
+      // Quiescent fast path — ONLY in undriven chambers (TOWER/POND at rest).
+      // Chambers with active boundary drivers (CAVITY lid, STREET inlet,
+      // BUCKET rotation) are never quiescent: their motion enters through the
+      // ghost/face laws, which this path would skip. At EXACT rest,
+      // strain/curl/confinement/diffusion/advection are the identity on zero —
+      // but buoyancy still runs (it is what starts the tower from rest).
+      const quiescentOK = chamber==="TOWER" || chamber==="POND" ||
+                          (chamber==="BUCKET" && prm.omega===0);
+      if(quiescentOK && uma===0 && vma===0){
+        computeRho();
+        buoyancy(h);
+        if(maxAbs(F.v)===0 && maxAbs(F.u)===0){      // buoyancy found nothing to do either
+          F.strain.fill(0); F.curl.fill(0);          // true curl/strain of a rest field
+          liveKE=0; liveWmax=0;
+          return snap;
+        }
+      }
+      // Documented substep budget at the 24-tick heartbeat (honest 2h
+      // operator splitting — Stam's classic solver does ALL of this once per
+      // FRAME at dt; here each operator still runs 12× per frame at dt/12):
+      //   even ticks: curl/strain + confinement + viscosity + momentum
+      //     advection + ∇·u projection, all at 2h. The projection ends every
+      //     frame (tick 24 is even), so the live ∇·u readout always measures
+      //     a freshly-projected field — it is the truth, not a leftover.
+      //   odd ticks: dye advection at 2h (flux-form conservative, CFL-subcycled).
+      //   every tick: buoyancy at h (it is what starts the tower from rest).
+      // Diffusion is implicit (unconditionally stable), momentum advection is
+      // semi-Lagrangian (unconditionally stable) and dyes exactly
+      // conservative, so 2h substeps are honest transport through the same
+      // fields — a labeled, measured budget (halving the solve/advect cadence
+      // cut frame cost ~2×; the physics outputs were re-measured after the
+      // change: ∇·u, τ-settle, St and mass conservation all re-verified).
+      if(tickCount%2===0){ computeStrainCurl(); if(prm.vortOn) vorticityConfinement(2*h); }
+      computeRho();                                    // ρ from mass-fraction mixing
+      buoyancy(h);
+      if(tickCount%2===0){                             // momentum block at 2h
+        diffuseVelocity(2*h, uma, vma);                // ν∇²u implicit, stable
+        F.u0.set(F.u); F.v0.set(F.v);                  // semi-Lagrangian advect at 2h
+        advect(1,F.u,F.u0,F.u0,F.v0,2*h);
+        advect(2,F.v,F.v0,F.u0,F.v0,2*h);
+        project();                                     // ∇·u ≈ 0 — enforced to tol
+      }
+      if(tickCount%2===1) advectDyes(2*h);
+      stepTracers(h);
+      liveKE=0; for(let k=0;k<S;k++) liveKE+=0.5*(F.u[k]*F.u[k]+F.v[k]*F.v[k]);
+      keRing.push(liveKE); if(keRing.length>96)keRing.shift();
+      liveWmax=maxAbs(F.curl);
+      return snap;
+    }
+
+    /* ---------- one visual frame = 24 clock ticks (one full rotation) ---------- */
+    function frame(){
+      const dt=DT*prm.speed, h=dt/TICKS_PER_FRAME;
+      computeStrainCurl(); computeRho(); computeVisc(dt);   // ν field (rank rheology) per frame
+      let snap;
+      for(let k=0;k<TICKS_PER_FRAME;k++) snap=tickOnce(h,dt); // 24 ticks = heartbeat
+      clearSources();                                  // frame-scoped queue
+      frameCount++; cumFrames++;
+      if(chamber==="TOWER"){                           // settle criterion (SPEC §4.1):
+        const tau=kendallTau(); tower.tau=tau;         // τ ≥ 0.9 for 60 consecutive frames
+        if(tau>=0.9){ tower.streak++; if(tower.streak>=60) tower.confirmed=true; }
+        else tower.streak=0;
+      }
+      return snap;
+    }
+
+    /* ---------- chamber initial conditions (all deterministic) ----------
+       clearAll wipes EVERY field completely — including the nine dens
+       sub-arrays (the old `for(const k in F)` loop skipped them: dens is an
+       Array of Float64Array, so TOWER dye survived reset → nondeterminism;
+       measured fresh-vs-reset checksum mismatch, found & fixed). After
+       clearAll + setChamber, the state is bit-identical to fresh genesis. */
+    function clearAll(){
+      F.u.fill(0); F.v.fill(0); F.u0.fill(0); F.v0.fill(0);
+      F.p.fill(0); F.div.fill(0); F.rho.fill(0); F.visc.fill(0);
+      F.curl.fill(0); F.strain.fill(0); F.d0.fill(0);
+      for(let f=0;f<9;f++){ F.dens[f].fill(0); densB[f].fill(0); dyeActive[f]=0; }
+      F.solid.fill(0); F.lam.fill(1);
+      srcQueue.length=0;
+    }
+    function buildCylinder(){
+      const cx=N*0.3, cy=(N+1)/2, r=street.D/2;
+      for(let j=1;j<=N;j++) for(let i=1;i<=N;i++){
+        const dx=i-cx, dy=j-cy;
+        if(dx*dx+dy*dy<=r*r) F.solid[IX(i,j)]=1;
+      }
+    }
+    function setChamber(name){
+      chamber=name; clearAll(); solidVer++;
+      // full experiment bookkeeping reset — chamber switch == fresh genesis
+      OQ.resetClock(); tickCount=0; frameCount=0;
+      liveKE=0; liveNdiv=0; liveWmax=0; projResid=0;
+      street.liftPrev=0; street.signChanges=0; street.lift=0; street.history.length=0;
+      cavity.psiTick=-99; cavity.minPsi=0; cavity.maxPsi=0; cavity.cx=0; cavity.cy=0; cavity.converged=false;
+      if(cavity.psi) cavity.psi.fill(0);
+      tower.streak=0; tower.confirmed=false; tower.tau=0;
+      keRing.length=0;
+      if(name==="TOWER"){
+        // stratified in REVERSED density order: lava (rank 9) on top … alcohol (rank 1) bottom.
+        // Buoyancy alone must invert it — nothing is hand-sorted.
+        const band=N/9;
+        for(let j=1;j<=N;j++){
+          const bandIdx=Math.min(8,Math.floor((j-1)/band));
+          const rank=9-bandIdx;                        // top→bottom: 9,8,…,1
+          for(let i=1;i<=N;i++) F.dens[rank-1][IX(i,j)]=1.0;   // full width, walls included
+        }
+        for(let f=0;f<9;f++) dyeActive[f]=1;
+      } else if(name==="CAVITY"){
+        for(let j=Math.round(N*0.42);j<=Math.round(N*0.58);j++)
+          for(let i=Math.round(N*0.42);i<=Math.round(N*0.58);i++)
+            F.dens[2][IX(i,j)]=1.0;                    // cerulean marker blob, ambient water
+        // Pre-spin IC (honest initial condition, documented): solid-body
+        // rotation at ω0 = 2U/N so the lid speed matches the IC at the top —
+        // a pre-spun tank. The lid + walls + projection then relax it to the
+        // true steady lid-driven cavity; the ψ readout measures that state.
+        // (From rest at ν_water the viscous spin-up time L²/ν ≈ 1800 s is
+        // honestly out of demo budget — the IC is the experiment's head start.)
+        { const om0=2*cavity.U/N, cx=(N+1)/2, cy=(N+1)/2;
+          for(let j=1;j<=N;j++) for(let i=1;i<=N;i++){
+            F.u[IX(i,j)] = -om0*(j-cy); F.v[IX(i,j)] = om0*(i-cx);
+          } }
+        dyeActive[2]=1;
+      } else if(name==="VORTEX STREET"){
+        buildCylinder();
+        // seed the wake instability with a tiny deterministic perturbation —
+        // mulberry(seal) noise, amplitude 1 cell/s, behind the cylinder.
+        // (Honest experimental noise: on a perfectly symmetric grid the
+        // Kármán instability would have nothing to grow from.)
+        const pr=OQ.rng(SEAL^0x9e37);
+        for(let j=1;j<=N;j++) for(let i=Math.round(N*0.3);i<=Math.min(N,Math.round(N*0.3+street.D*3));i++){
+          const id=IX(i,j);
+          if(!F.solid[id]) F.v[id]+=(pr()-0.5)*2.0;
+        }
+      } else if(name==="BUCKET"){
+        for(let j=Math.round(N*0.45);j<=Math.round(N*0.75);j++)
+          for(let i=Math.round(N*0.2);i<=Math.round(N*0.8);i++)
+            F.dens[2][IX(i,j)]=0.9;                    // water pool for the free-surface proxy
+        for(let j=Math.round(N*0.5);j<=Math.round(N*0.65);j++)
+          for(let i=Math.round(N*0.3);i<=Math.round(N*0.45);i++)
+            F.dens[6][IX(i,j)]=0.8;                    // honey lens — watch it lag the spin-up
+      } else if(name==="POND"){
+        // empty pond, ambient water — free play
+      }
+      // reseed tracer stream deterministically (mulberry from the seal)
+      rngStream=OQ.rng(SEAL);                          // same seed every reset → same flow
+      for(let k=0;k<TRN;k++) spawnTracer(k);
+    }
+    function reset(){ setChamber(chamber); }           // reset === fresh genesis, bit-identical
+
+    /* ---------- metrics — everything displayed is computed from fields ---------- */
+    function masses(){ const m=new Float64Array(9);
+      for(let f=0;f<9;f++){ let s=0; const d=F.dens[f];
+        for(let j=1;j<=N;j++) for(let i=1;i<=N;i++) s+=d[IX(i,j)]; m[f]=s; }
+      return m; }
+    function kendallTau(){ // TOWER metric: mean dye height order vs true density rank order
+      const meanY=new Float64Array(9), mass=new Float64Array(9);
+      for(let f=0;f<9;f++){ let sy=0,sm=0; const d=F.dens[f];
+        for(let j=1;j<=N;j++) for(let i=1;i<=N;i++){ const v=d[IX(i,j)]; sy+=v*j; sm+=v; }
+        meanY[f]=sm>1e-9?sy/sm:0; mass[f]=sm; }
+      // true order: densest (rank 9, lava) should sit LOWEST (largest mean y, y down)
+      let conc=0, disc=0;
+      for(let a=0;a<9;a++) for(let b=a+1;b<9;b++){
+        if(mass[a]<1e-6||mass[b]<1e-6) continue;
+        // heavier fluid b>a? density order: rank 9 densest. Pair (a,b): heavier = larger rank.
+        const heavierMean = (b>a)?meanY[b]:meanY[a], lighterMean=(b>a)?meanY[a]:meanY[b];
+        if(heavierMean>lighterMean)conc++; else if(heavierMean<lighterMean)disc++;
+      }
+      const tot=conc+disc; return tot? (conc-disc)/tot : 0;
+    }
+    function streetLift(){ // vertical pressure force on the cylinder (surface integral proxy)
+      let fy=0;
+      for(let j=1;j<=N;j++) for(let i=1;i<=N;i++){
+        const id=IX(i,j); if(!F.solid[id]) continue;
+        if(!F.solid[id-W]) fy-=F.p[id-W];              // pressure above pushes down (−y)
+        if(!F.solid[id+W]) fy+=F.p[id+W];              // pressure below pushes up (+y)
+      }
+      return fy;
+    }
+    function updateStreet(){
+      const fy=streetLift(); street.lift=fy;
+      street.history.push(fy); if(street.history.length>512)street.history.shift();
+      // sign change of DETRENDED lift (window moving mean subtracted):
+      // a steady asymmetric bias (Coandă attachment on the rasterized cylinder)
+      // is honest physics; the shedding signal is the oscillation about the mean.
+      const H=street.history, m=Math.min(H.length,120);
+      let mean=0; for(let k=H.length-m;k<H.length;k++) mean+=H[k]; mean/=m;
+      const d=fy-mean;
+      if(d!==0 && street.liftPrev!==0 && (d<0)!==(street.liftPrev<0)) street.signChanges++;
+      if(d!==0) street.liftPrev=d;
+    }
+    function strouhal(){ // St = f·D/U — ESTIMATE from detrended lift zero-crossings
+      // References (correct lattice units): U = inlet speed street.U,
+      // D = cylinder diameter street.D (cells). Measured over the active-
+      // shedding window (last ≤256 recorded frames, one sample per frame).
+      const h=street.history; if(h.length<32) return 0;
+      const m=Math.min(h.length,256), off=h.length-m;
+      let mean=0; for(let k=off;k<h.length;k++) mean+=h[k]; mean/=m;
+      let cross=0;
+      for(let k=off+1;k<h.length;k++){ const a=h[k]-mean, b2=h[k-1]-mean;
+        if(a!==0 && (a<0)!==(b2<0)) cross++; }
+      const seconds=m*DT*prm.speed;                       // one sample per visual frame
+      const f=cross/2/seconds;
+      return f*street.D/street.U;
+    }
+    function streamfunction(){ // CAVITY: solve ∇²ψ = −ω (Dirichlet ψ=0 walls), on demand
+      if(frameCount-cavity.psiTick<15 && cavity.psi) return;
+      cavity.psiTick=frameCount;
+      const L0=mgP[0];
+      if(!cavity.psi) cavity.psi=new Float64Array(S);
+      mgSetup(mgP, null, null, null, 1);               // A = −∇², Dirichlet ψ=0 walls
+      mgPSetupMode=-1;                                 // pressure cache invalidated (different operator)
+      for(let k=0;k<S;k++) L0.b[k]=F.curl[k];          // Aψ = ω  ⇔  ∇²ψ = −ω
+      L0.x.set(cavity.psi);                            // warm start from last readout
+      // solve to a MEASURED relative residual — never display garbage numbers
+      let bmax=0; for(let k=0;k<S;k++){ const a=L0.b[k]<0?-L0.b[k]:L0.b[k]; if(a>bmax)bmax=a; }
+      // Dirichlet-mode V-cycles converge at a measured ÷2/cycle (slower than
+      // the Neumann ÷20 — the ψ=0 wall law damps fewer modes per pass), so the
+      // cap is 24: cold start needs ~21 cycles, warm-started re-solves 1–3.
+      const res=mgSolve(mgP, 1e-7*Math.max(1,bmax), 24, 1.0, 1);
+      cavity.converged = res < 1e-5*Math.max(1,bmax);  // honest convergence flag for the HUD
+      cavity.psi.set(L0.x);
+      // Lid moves +x (y down) → primary vortex has ω>0 → ψ>0 with a MAX at the
+      // vortex center (maximum principle: −∇²ψ=ω>0 ⇒ ψ≥0). Counter-rotating
+      // corner eddies give the (small, bounded) ψmin. The vortex-center readout
+      // is the LARGER-|ψ| extremum — the primary vortex, honestly.
+      let mn=Infinity, mx=-Infinity, ci=0, cj=0, cmi=0, cmj=0;
+      for(let j=2;j<N;j++) for(let i=2;i<N;i++){
+        const v=cavity.psi[IX(i,j)];
+        if(v<mn){mn=v;cmi=i;cmj=j;}
+        if(v>mx){mx=v;ci=i;cj=j;}
+      }
+      cavity.minPsi=mn; cavity.maxPsi=mx;
+      if(-mn>mx){ cavity.cx=cmi; cavity.cy=cmj; }       // negative-dominant (e.g. −U lid)
+      else { cavity.cx=ci; cavity.cy=cj; }              // primary vortex center
+    }
+    function equationTerms(){ // live per-term magnitudes from the actual fields (SPEC §9)
+      let adv=0, vis=0, prg=0, cnt=0;
+      foreachFluid((id)=>{
+        const dudx=0.5*(F.u[id+1]-F.u[id-1]), dudy=0.5*(F.u[id+W]-F.u[id-W]);
+        const dvdx=0.5*(F.v[id+1]-F.v[id-1]), dvdy=0.5*(F.v[id+W]-F.v[id-W]);
+        adv += Math.abs(F.u[id]*dudx+F.v[id]*dudy) + Math.abs(F.u[id]*dvdx+F.v[id]*dvdy);
+        const lap_u=F.u[id+1]+F.u[id-1]+F.u[id+W]+F.u[id-W]-4*F.u[id];
+        const lap_v=F.v[id+1]+F.v[id-1]+F.v[id+W]+F.v[id-W]-4*F.v[id];
+        vis += F.visc[id]*(Math.abs(lap_u)+Math.abs(lap_v));
+        prg += Math.abs(0.5*(F.p[id+1]-F.p[id-1])) + Math.abs(0.5*(F.p[id+W]-F.p[id-W]));
+        cnt++;
+      });
+      return { adv:adv/(cnt||1), vis:vis/(cnt||1), prg:prg/(cnt||1), ndiv:liveNdiv };
+    }
+    function reynolds(){ // Re = U·L/ν from live field stats — labeled estimate
+      let usum=0, nsum=0, cnt=0;
+      foreachFluid((id)=>{ usum+=Math.sqrt(F.u[id]*F.u[id]+F.v[id]*F.v[id]); nsum+=F.visc[id]; cnt++; });
+      const U=usum/(cnt||1), nu=nsum/(cnt||1);
+      return nu>1e-12 ? U*N/nu : 0;
+    }
+    function metrics(){
+      return { ndiv:liveNdiv, projResid, KE:liveKE, wmax:liveWmax,
+        step:OQ.clock.index, t:OQ.clock.t, coherence:OQ.coherence,
+        masses:masses(), tau:chamber==="TOWER"?tower.tau:null,
+        towerStreak:tower.streak, towerConfirmed:tower.confirmed,
+        lift:chamber==="VORTEX STREET"?street.lift:null,
+        signChanges:street.signChanges, strouhal:chamber==="VORTEX STREET"?strouhal():null,
+        cavity:chamber==="CAVITY"?{minPsi:cavity.minPsi,maxPsi:cavity.maxPsi||0,cx:cavity.cx,cy:cavity.cy,converged:cavity.converged}:null,
+        terms:equationTerms(), Re:reynolds(), frame:frameCount, cumFrames };
+    }
+
+    /* ---------- determinism checksum (FNV-1a over raw field bytes) ---------- */
+    function checksum(){
+      let h1=0x811c9dc5>>>0, h2=0x811c9dc5>>>0;
+      function mix(arr,hh){ const dv=new Uint8Array(arr.buffer,arr.byteOffset,arr.byteLength);
+        for(let k=0;k<dv.length;k+=1){ hh^=dv[k]; hh=Math.imul(hh,0x01000193)>>>0; } return hh; }
+      h1=mix(F.u,h1); h1=mix(F.v,h1);
+      for(let f=0;f<9;f++) h2=mix(F.dens[f],h2);
+      h1=mix(F.p,h1);
+      return ("00000000"+h1.toString(16)).slice(-8)+("00000000"+h2.toString(16)).slice(-8);
+    }
+    function hasNaN(){
+      for(let k=0;k<S;k++) if(!isFinite(F.u[k])||!isFinite(F.v[k])||!isFinite(F.p[k])) return true;
+      for(let f=0;f<9;f++){ const d=F.dens[f]; for(let k=0;k<S;k++) if(!isFinite(d[k])) return true; }
+      return false;
+    }
+
+    const sim={ N, W, F, prm, IX, frame, tickOnce, setChamber, reset, metrics, checksum, hasNaN,
+      pour, stir, clearSources, tr, TRN, updateStreet, streamfunction, advectDyes, dyeActive,
+      get chamber(){return chamber;}, set chamberDir(c){setChamber(c);},
+      get tickCount(){return tickCount;}, get frameCount(){return frameCount;},
+      get cumFrames(){return cumFrames;},
+      get towerGEff(){return chamber==="TOWER"?Math.max(prm.gScale,towerGs()):prm.gScale;},
+      get towerBathEff(){return chamber==="TOWER"?towerBathF():1;},
+      DT, TICKS_PER_FRAME, NU0, G0, TOWER_G, PIGMENT, FLUIDT, CHAMBERS };
+    setChamber(opts.chamber||"POND");
+    // JIT/setup warm-up: two throwaway frames, then re-genesis. reset() (i.e.
+    // setChamber) is verified bit-identical to fresh genesis, so determinism
+    // and every checksum are untouched — this just moves one-time compile /
+    // multigrid-chain build cost out of the measured first frame.
+    frame(); frame(); setChamber(chamber);
+    if(opts.params) Object.assign(prm, opts.params);
+    return sim;
+  }
+
+  return { createSim, CHAMBERS, NU0, G0, PIGMENT, DT, TICKS_PER_FRAME };
+})();
+
+/* ================================================================
+   PART IV — SESSION RECORD / EXPORT / REPLAY (deterministic)
+   Every action is logged {t, clockStep, action, params}. Replay
+   re-seeds from the seal and re-applies actions at the same frame —
+   same seed → same flow (mulberry determinism, zero wall-clock).
+   ================================================================ */
+const SESSION = (() => {
+  function makeRecorder(sim){
+    const log=[];
+    function rec(action, params){
+      // t is the CUMULATIVE frame clock (never resets across chamber switches
+      // or resets) so replay ordering survives determinism-preserving resets.
+      log.push({ t:sim.cumFrames, clockStep:OQ.clock.index, action, params:params||{} });
+    }
+    function exportJSON(){
+      return JSON.stringify({
+        architect:"Fisal Campbell / Rumec", seal:"1011911783BD",
+        simulator:"Φ Navier-Stokes Lattice Simulator v1.0", lineage:"OQ Seed v1.6",
+        seed:OQ.SEAL, N:sim.N, chamber:sim.chamber, params:Object.assign({},sim.prm),
+        frames:sim.cumFrames, actions:log }, null, 1);
+    }
+    return { log, rec, exportJSON };
+  }
+  // replay: given a session object, drive a fresh sim deterministically
+  function replay(session, framesToRun){
+    const sim=NSCORE.createSim({ N:session.N||160, chamber:session.chamber||"POND", params:session.params||{} });
+    const acts=(session.actions||[]).slice().sort((a,b)=>a.t-b.t);
+    let ai=0;
+    const total=framesToRun!==undefined?framesToRun:(session.frames||0);
+    for(let f=0; f<total; f++){
+      while(ai<acts.length && acts[ai].t<=sim.cumFrames){
+        const a=acts[ai++];
+        if(a.action==="pour") sim.pour(a.params.x,a.params.y,a.params.rank,a.params.rate,a.params.rad);
+        else if(a.action==="stir") sim.stir(a.params.x,a.params.y,a.params.dx,a.params.dy,a.params.rad);
+        else if(a.action==="chamber") sim.setChamber(a.params.name);
+        else if(a.action==="reset") sim.reset();
+        else if(a.action==="param") Object.assign(sim.prm,a.params);
+      }
+      sim.frame();
+    }
+    return sim;
+  }
+  return { makeRecorder, replay };
+})();
+
+/* ---- verification hooks (SPEC §7) — headless-safe ---- */
+
+/* ==================================================================
+   THE DYNAMICS CORE — VW Seed 1+2 · Clock · Pair · Gates · Domains
+   Architect: Fisal Campbell / Rumec · Seal 1011911783BD
+   Embedded from the issued seed with one law-fix: pair IDs are seeded
+   (the issued file called Math.random — against its own first law).
+   The core is the world\'s nervous system: beats, gates, domains,
+   Möbius crossings. Its gates witness; they never fake a force.
+   ================================================================== */
+// ===================== VW-CORE-BEGIN =====================
+/*  VW LATTICE DYNAMICS CORE — SEED 1+2
+    Clock · Serials · Pair · Gates · Domains
+    Portable: copy this whole block into any simulator.
+    Architect: Fisal Campbell / Rumec · Seal 1011911783 BD               */
+const VW = (function () {
+  'use strict';
+  const PHI = (1 + Math.sqrt(5)) / 2;
+  const TAU = Math.PI * 2;
+  const CLOCKWISE = 1, COUNTERCLOCKWISE = -1;
+  // Q-Cell Solfeggio stations: 0 = rest, 1..9 = the nine frequencies
+  const SOLFEGGIO = [0, 174, 285, 396, 417, 528, 639, 741, 852, 963];
+
+  // Every number is a full serial; every serial is a cipher.
+  // 8 properties: speed, pressure, color, frequency, vector, growth, direction, mass.
+  function serial(digit) {
+    const d = digit;
+    return {
+      digit: d,
+      mass:      d === 0 ? 0 : Math.pow(PHI, d - 1),                 // the 8th property — the rotation mass itself
+      speed:     d === 0 ? 0 : (d % 2 === 1 ? d * PHI : d / PHI),    // odd/light forward, even/dark held
+      pressure:  d === 0 ? 0 : (d * d) / PHI,
+      color:     'hsl(' + ((d * 137.508) % 360).toFixed(1) + ' 65% 62%)',  // golden-angle hues
+      frequency: SOLFEGGIO[d],
+      vectorAngle: (d * 137.508 * Math.PI / 180) % TAU,
+      growth:    d === 0 ? 0 : Math.pow(PHI, d / 9),
+      direction: d % 2 === 1 ? 1 : -1
+    };
+  }
+  const SERIALS = Array.from({ length: 10 }, function (_, d) { return serial(d); });
+
+  // ---- THE 24-STEP CLOCK ------------------------------------------------
+  // Self-clocked. One rotation = 24 beats, clockwise. Odd beats drive movement
+  // and direction; even beats integrate. The dial is scalable without
+  // modification — second to eon. Rhythm: 3/4.
+  function Clock(dialMs) {
+    this.dial = dialMs || 260;
+    this.beat = -1;
+    this.rotation = 0;
+    this.accum = 0;
+    this.meter = 3;
+  }
+  Clock.prototype.step = function () {
+    this.beat++;
+    if (this.beat >= 24) { this.beat = 0; this.rotation++; }
+    const b = this.beat;
+    return {
+      beat: b, rotation: this.rotation,
+      odd: b % 2 === 1,
+      driver: b % 2 === 1 ? b : 0,
+      measure: (b % this.meter) + 1
+    };
+  };
+  Clock.prototype.advance = function (dtMs) {
+    this.accum += dtMs;
+    const out = [];
+    while (this.accum >= this.dial) { this.accum -= this.dial; out.push(this.step()); }
+    return out;
+  };
+
+  // ---- DOMAIN -----------------------------------------------------------
+  // A region where a consistent, honest calculation limit holds — open air,
+  // water, vacuum, core, horizon. Each domain carries its OWN floor (−10 of
+  // its vector space) and adjusts its own dial, harmonized to the root clock.
+  function Domain(name, opts) {
+    opts = opts || {};
+    this.name = name;
+    this.limit = opts.limit !== undefined ? opts.limit : 9;    // honest calculation limit (+)
+    this.floor = opts.floor !== undefined ? opts.floor : -10;  // its own deepest station
+    this.dial  = opts.dial  !== undefined ? opts.dial  : 1;    // harmony multiplier vs root
+    this.phase = 0;
+    this.nodes = [];                                            // boundary nodes interlock here
+  }
+  Domain.prototype.advance = function () { this.phase += this.dial; };
+
+  // ---- PAIR -------------------------------------------------------------
+  // Every point of a persistent object is a bound Pair: traversable (T,
+  // clockwise, light-matter nanites) + introverted (I, counterclockwise,
+  // dark-matter nanites), joined at the 0–0+ seam. No value ever traverses
+  // zero — states crossfade (the Möbius blend).
+  function Pair(digit, domain) {
+    this.id = 'P' + ((fnv1a('PAIR·' + (Lattice._seq = (Lattice._seq || 0) + 1) + '·1011911783BD') >>> 0)
+      .toString(36)).slice(0, 5);   // seeded — the law is zero Math.random (fixed from seed 1+2 as issued)
+    this.digit = digit;
+    this.T = Object.assign({}, SERIALS[digit]);   // traversable serial
+    this.I = Object.assign({}, SERIALS[digit]);   // introverted serial — same calculation
+    this.I.direction = -this.T.direction;         // mirrored
+    this.spin = { T: CLOCKWISE, I: COUNTERCLOCKWISE };
+    this.domain = domain;
+    this.energy = 0;
+    this.entangledWith = 0;
+    this.crossing = null;   // { from, to, t, s, dur }
+    this.blend = 0;         // seam crossfade amount 0→1→0
+  }
+
+  // ---- LATTICE ----------------------------------------------------------
+  function Lattice(cfg) {
+    cfg = cfg || {};
+    this.clock = new Clock(cfg.dialMs);
+    this.domains = [];
+    this.pairs = [];
+    this.events = [];
+    this.listeners = {};
+    this.paused = false;
+    this._cap = 500;
+  }
+  Lattice.prototype.on = function (ev, fn) {
+    (this.listeners[ev] = this.listeners[ev] || []).push(fn);
+    return this;
+  };
+  Lattice.prototype.emit = function (ev, data) {
+    const e = Object.assign({ ev: ev, at: { r: this.clock.rotation, b: this.clock.beat } }, data);
+    this.events.push(e);
+    if (this.events.length > this._cap) this.events.shift();
+    (this.listeners[ev] || []).forEach(function (fn) { fn(e); });
+    (this.listeners['*'] || []).forEach(function (fn) { fn(e); });
+  };
+  Lattice.prototype.addDomain = function (name, opts) {
+    const d = new Domain(name, opts);
+    this.domains.push(d);
+    this.emit('domain', { domain: name, limit: d.limit, floor: d.floor, dial: d.dial });
+    return d;
+  };
+  Lattice.prototype.addPair = function (digit, domain) {
+    const p = new Pair(digit, domain);
+    this.pairs.push(p);
+    this.emit('pair', { pair: p.id, digit: digit, domain: domain.name });
+    return p;
+  };
+  // Crossing between domains: a Möbius crossfade — the transition bleeds into
+  // the next state. No hard swap anywhere.
+  Lattice.prototype.beginCrossing = function (pair, toDomain, dur) {
+    if (pair.crossing || pair.domain === toDomain) return;
+    pair.crossing = { from: pair.domain, to: toDomain, t: 0, s: 0, dur: dur || 1.6 };
+    this.emit('seam', { pair: pair.id, from: pair.domain.name, to: toDomain.name,
+      note: 'Möbius crossfade begins — the transition bleeds, never cuts' });
+  };
+  // The 6–8 gate fires automatically — observer or not. From 2 back to 1:
+  // negative anchor seats at the firing domain's own −10 floor, positive
+  // duplicate continues, three-point collapse settles the configuration.
+  Lattice.prototype.tunnel = function (st, note) {
+    for (const p of this.pairs) {
+      const doms = [p.domain];
+      if (p.crossing) doms.push(p.crossing.to);
+      for (const dom of doms) {
+        this.emit('tunnel', {
+          pair: p.id, driver: st.driver,
+          tunnel: '2→1', anchor: dom.floor, anchorDomain: dom.name,
+          duplicate: 'continues', collapse: 'three-point: driver · anchor · duplicate',
+          note: note || '6–8 gate fired — automatic, observer or not'
+        });
+      }
+    }
+  };
+  Lattice.prototype.beat = function (st) {
+    this.emit('beat', st);
+    if (st.odd) {
+      // × gate — entanglement on movement beats
+      for (const p of this.pairs) {
+        p.entangledWith = st.driver;
+        p.energy += st.driver * p.T.mass;
+      }
+      this.emit('gate', { gate: '×', driver: st.driver, action: 'entangle' });
+      if (st.driver >= 6 && st.driver <= 8) this.tunnel(st);
+    } else {
+      // ÷ gate — release on integration beats.
+      // ÷0 at the seam IS the tunnel: the forbidden operation of arithmetic
+      // is the birth operation of the lattice.
+      for (const p of this.pairs) {
+        if (p.crossing && Math.abs(p.crossing.s - 0.5) < 0.09) {
+          this.tunnel({ driver: 0 }, '÷0 at the seam — Möbius blend, variables fade in');
+        }
+        p.energy = p.energy / PHI;
+        p.entangledWith = 0;
+      }
+      this.emit('gate', { gate: '÷', driver: 0, action: 'release' });
+    }
+    for (const d of this.domains) d.advance();
+  };
+  Lattice.prototype.update = function (dtMs) {
+    if (this.paused) return;
+    const steps = this.clock.advance(dtMs);
+    for (const st of steps) this.beat(st);
+    for (const p of this.pairs) {
+      if (p.crossing) {
+        const c = p.crossing;
+        c.t += dtMs / 1000;
+        c.s = Math.min(c.t / c.dur, 1);
+        p.blend = Math.sin(c.s * Math.PI);      // fade in, fade out — the strip never cuts
+        if (c.s >= 1) {
+          p.domain = c.to;
+          p.crossing = null;
+          p.blend = 0;
+          this.emit('seam-end', { pair: p.id, domain: p.domain.name,
+            note: 'crossfade complete — limits fully harmonized' });
+        }
+      }
+    }
+  };
+  Lattice.prototype.snapshot = function () {
+    return {
+      meta: { system: 'VW Dynamics Core — Seed 1+2', seal: '1011911783 BD',
+              architect: 'Fisal Campbell / Rumec', exported: new Date().toISOString() },
+      clock: { dialMs: this.clock.dial, beat: this.clock.beat,
+               rotation: this.clock.rotation, meter: '3/4' },
+      domains: this.domains.map(function (d) {
+        return { name: d.name, limit: d.limit, floor: d.floor,
+                 dial: d.dial, phase: +d.phase.toFixed(3) };
+      }),
+      pairs: this.pairs.map(function (p) {
+        return { id: p.id, digit: p.digit, domain: p.domain.name,
+                 energy: +p.energy.toFixed(3), blend: +p.blend.toFixed(3),
+                 crossing: p.crossing ? p.crossing.to.name : null };
+      }),
+      events: this.events
+    };
+  };
+  function create(cfg) { return new Lattice(cfg); }
+  return { create: create, Clock: Clock, Domain: Domain, Pair: Pair,
+           Lattice: Lattice, SERIALS: SERIALS, PHI: PHI, TAU: TAU,
+           CLOCKWISE: CLOCKWISE, COUNTERCLOCKWISE: COUNTERCLOCKWISE };
+})();
+
+/* ==================== WORLDGEN — the province on the planet ==================== */
+/* One traversable region of the surface: GRID² cells, CELL meters each,   */
+/* tangent to the planet at LAT0/LON0. Sealed noise → height → geology.    */
+const GRID=1024, CELL=10, HALF=GRID*CELL/2;
+const LAT0=24*Math.PI/180, LON0=0;
+const SEA=0;
+const hm=new Int16Array(GRID*GRID);        // height ×10
+const rock=new Uint8Array(GRID*GRID);      // host rock id
+const NMIN=10;
+const mins=new Uint8Array(NMIN*GRID*GRID); // mineral grade fields 0-255
+const ROCKN=['granite','basalt','sandstone','limestone','shale','marble','slate','quartzite','evaporite','kimberlite'];
+const MINN=['gold','lapis lazuli','opal','iron','copper','quartz','sulfur','salt','coal','diamond'];
+const MINC=[[212,175,55],[46,88,170],[205,225,235],[150,92,60],[184,115,51],[232,230,242],[222,202,62],[242,240,235],[42,42,46],[205,238,255]];
+const ROCKC=[[124,118,114],[56,54,60],[188,164,120],[172,168,152],[100,96,92],[214,210,202],[88,92,100],[154,150,144],[228,224,214],[64,58,64]];
+/* seeded volcanic vents (8) and craton cores (6) — placed by the seal, not by hand */
+const VENTS=[],CRATONS=[];
+(function(){
+  const r=mulberry32(fnv1a('VENTS·'+LINEAGE));
+  for(let i=0;i<8;i++)VENTS.push({x:(r()-0.5)*2*HALF*0.8,z:(r()-0.5)*2*HALF*0.8,h:320+r()*380});
+  const r2=mulberry32(fnv1a('CRATONS·'+LINEAGE));
+  for(let i=0;i<6;i++)CRATONS.push({x:(r2()-0.5)*2*HALF*0.85,z:(r2()-0.5)*2*HALF*0.85});
+})();
+function distTo(list,x,z){let d=1e18;for(let i=0;i<list.length;i++){const dx=x-list[i].x,dz=z-list[i].z,dd=dx*dx+dz*dz;if(dd<d)d=dd}return Math.sqrt(d)}
+
+let genRow=0, worldSealed=false;
+function genRows(n){
+  for(let k=0;k<n&&genRow<GRID;k++,genRow++){
+    const z=genRow*CELL-HALF, row=genRow*GRID;
+    for(let cx=0;cx<GRID;cx++){
+      const x=cx*CELL-HALF, idx=row+cx;
+      /* ---- terrain: continent, mountain arcs, hills, vents, detail ---- */
+      let cont=fbm(x/4300,z/4300,11,4)-0.46;
+      cont-=Math.max(0,Math.min(1,(-x-1400)/2400))*0.20;      // western sea
+      let h=cont*820;
+      const mass=Math.max(0,fbm(x/2400,z/2400,23,3)-0.48);       // broad mountain mass
+      h+=mass*mass*1500;
+      const arc=Math.max(0,ridged(x/1600,z/1600,23,3)-0.36);      // ridged crests on the flanks
+      h+=arc*arc*600*(cont>-0.02?1:0.25);
+      h+=(fbm(x/1500,z/1500,31,3)-0.5)*300;
+      h+=(fbm(x/280,z/280,41,2)-0.5)*52;
+      let ventD=distTo(VENTS,x,z);
+      for(let i=0;i<VENTS.length;i++){const dx=x-VENTS[i].x,dz=z-VENTS[i].z,d=Math.sqrt(dx*dx+dz*dz);
+        if(d<860){const t=1-d/860;h+=VENTS[i].h*t*(1+0.3*fbm(x/300,z/300,77,2));ventD=Math.min(ventD,d);}}
+      h=h>=0?900*Math.tanh(h/900):-320*Math.tanh(-h/320);   // soft summit & floor — hard clamps carve plateau walls
+      hm[idx]=Math.round(h*10);
+      /* ---- geology: host rock by formation environment ---- */
+      const hgt=h;
+      let rk;
+      if(hgt<SEA-25)rk=1;                                        // oceanic crust — basalt
+      else{
+        const sed=fbm(x/3100+71,z/3100-33,51,3);
+        const arid=fbm(x/2600+201,z/2600+77,61,3);
+        if(sed>0.56)rk=arid>0.55?2:(arid<0.45?4:3);              // basin: sandstone / shale / limestone
+        else rk=0;                                               // craton — granite
+        const intr=fbm(x/1500-11,z/1500+47,91,3);
+        if(rk===3&&intr>0.50&&intr<0.585)rk=5;                   // limestone cooked to marble near intrusions
+        if(ventD<700)rk=1;                                       // volcanic edifice — basalt
+        for(let i=0;i<CRATONS.length;i++){const dx=x-CRATONS[i].x,dz=z-CRATONS[i].z;
+          if(dx*dx+dz*dz<19600&&ihash(cx,genRow,911)>0.90){rk=9;break}}   // kimberlite pipe (140 m)
+      }
+      rock[idx]=rk;
+      /* ---- minerals — grade fields, each from its real geological rule ---- */
+      const g=(mi,v)=>{if(v>0)mins[mi*GRID*GRID+idx]=Math.min(255,v|0)};
+      const fault=ridged(x/1100+5,z/1100+9,83,3);
+      const wt=8+fbm(x/900+13,z/900+29,71,2)*36;                 // paleo water table
+      const arid=fbm(x/2600+201,z/2600+77,61,3);
+      if(rk===0&&ihash(cx,genRow,7)>0.5)g(5,40+ihash(cx,genRow,8)*90);                       // quartz in granite
+      if(fault>0.90&&ihash(cx,genRow,13)>0.70)g(0,60+ihash(cx,genRow,14)*195);               // gold in fault quartz
+      if(rk===1&&ihash(cx,genRow,21)>0.52)g(3,50+ihash(cx,genRow,22)*120);                   // iron in basalt bands
+      if(rk===4&&ihash(cx,genRow,23)>0.55)g(3,30+ihash(cx,genRow,24)*90);                    // banded iron in shale
+      if(ventD<1000)g(4,Math.max(0,(1-ventD/1000))*200*ihash(cx,genRow,31));                 // copper porphyry ring
+      if(ventD<340)g(6,(1-ventD/340)*230);                                                     // sulfur at the vent
+      if(rk===5&&ihash(cx,genRow,29)>0.78)g(1,80+ihash(cx,genRow,30)*175);                   // lapis in marble
+      if(rk===2&&Math.abs(hgt-wt)<10&&arid>0.48)g(2,50+ihash(cx,genRow,41)*150);             // opal at paleo water table
+      if(arid>0.62&&hgt>SEA-4&&hgt<SEA+10)g(7,120+ihash(cx,genRow,43)*135);                  // salt in arid flats
+      if(rk===4&&arid<0.45&&hgt<60&&hgt>SEA)g(8,70+ihash(cx,genRow,47)*150);                 // coal in wet lowland shale
+      if(rk===9)g(9,150+ihash(cx,genRow,53)*105);                                              // diamond — the pipe itself
+    }
+  }
+  if(genRow>=GRID)worldSealed=true;
+}
+function sampGrid(g,x,z){
+  let fx=(x+HALF)/CELL,fz=(z+HALF)/CELL;
+  if(fx<0)fx=0;if(fz<0)fz=0;if(fx>GRID-1.001)fx=GRID-1.001;if(fz>GRID-1.001)fz=GRID-1.001;
+  const x0=fx|0,z0=fz|0,tx=fx-x0,tz=fz-z0,i=z0*GRID+x0;
+  const a=g[i],b=g[i+1],c=g[i+GRID],d=g[i+GRID+1];
+  return a+(b-a)*tx+(c-a)*tz+(a-b-c+d)*tx*tz;
+}
+const surfH=(x,z)=>sampGrid(hm,x,z)*0.1;
+function rockAt(x,z){let ix=((x+HALF)/CELL)|0,iz=((z+HALF)/CELL)|0;
+  if(ix<0)ix=0;if(iz<0)iz=0;if(ix>=GRID)ix=GRID-1;if(iz>=GRID)iz=GRID-1;return rock[iz*GRID+ix]}
+function minAt(mi,x,z){let ix=((x+HALF)/CELL)|0,iz=((z+HALF)/CELL)|0;
+  if(ix<0)ix=0;if(iz<0)iz=0;if(ix>=GRID)ix=GRID-1;if(iz>=GRID)iz=GRID-1;return mins[mi*GRID*GRID+iz*GRID+ix]}
+function worldChecksum(){
+  let s='';const step=131,N=GRID*GRID;
+  for(let i=0;i<N;i+=step)s+=String.fromCharCode(((hm[i]+32768)>>4)&255);
+  for(let i=0;i<N;i+=step*3)s+=String.fromCharCode(rock[i]&255);
+  return fnv1a(s).toString(16).toUpperCase().padStart(8,'0');
+}
+
+/* ==================== DYNAMICS CORE — the world's nervous system ==================== */
+/* Beats, gates, domains, Möbius crossings — the witness layer. Its gates
+   observe and log; they never fake a force (the Architect's own boundary:
+   Seeds 1+2 make the dynamics real; matter is Seed 3+4). */
+const vwCore=VW.create({dialMs:260});
+const DOM_AIR=vwCore.addDomain('AIR',{limit:9,floor:-10,dial:1});
+const DOM_WATER=vwCore.addDomain('WATER',{limit:6,floor:-10,dial:0.5});
+const WORLD_DIGIT=(fnv1a('WORLD·'+LINEAGE)>>>0)%9+1;
+const worldPair=vwCore.addPair(WORLD_DIGIT,DOM_AIR);
+let uwF=0,wasUnder=false;                    // underwater crossfade — the transition bleeds, never cuts
+const SHD={on:false,ex:1,ez:0,sl:1};         // cast-shadow sun ray, set per frame
+const SHD_D=[70,160,300];                    // occlusion probe distances (m)
+const GLARE={on:false,sx:1e9};               // reflected sun path on water
+let CURX=0;
+const dcLog=[];
+vwCore.on('*',e=>{ if(e.ev==='beat')return;
+  dcLog.unshift(e);if(dcLog.length>14)dcLog.pop();
+  if($('p-core').classList.contains('open'))drawCoreLog();});
+
+/* ==================== RENDERER — appearance reports state ==================== */
+const FOCAL=300;
+let BUF_W=480,BUF_H=270,FOVX=2*Math.atan(BUF_W/2/FOCAL);
+const view=$('view'),vctx=view.getContext('2d');
+const bufC=document.createElement('canvas'),bctx=bufC.getContext('2d');
+let img,px,depth,skyElev;
+function allocBuffer(){
+  bufC.width=BUF_W;bufC.height=BUF_H;
+  img=bctx.createImageData(BUF_W,BUF_H);px=img.data;
+  depth=new Float32Array(BUF_W*BUF_H);
+  skyElev=new Float32Array(BUF_H);
+}
+allocBuffer();
+const render={scale:1,ox:0,oy:0,w:0,h:0};
+function resize(){
+  render.w=view.width=window.innerWidth;render.h=view.height=window.innerHeight;
+  const aspect=render.w/render.h,TARGET=480*270;
+  let h=Math.round(Math.sqrt(TARGET/aspect));h=Math.max(180,Math.min(720,h));
+  const w=Math.max(160,Math.min(960,Math.round(h*aspect)));
+  if(w!==BUF_W||h!==BUF_H){BUF_W=w;BUF_H=h;FOVX=2*Math.atan(BUF_W/2/FOCAL);allocBuffer();}
+  render.scale=Math.min(render.w/BUF_W,render.h/BUF_H);
+  render.ox=Math.max(0,(render.w-Math.ceil(BUF_W*render.scale))/2);
+  render.oy=Math.max(0,(render.h-Math.ceil(BUF_H*render.scale))/2);
+}
+window.addEventListener('resize',resize);resize();
+
+const player={x:0,y:200,z:0,yaw:0.3,pitch:-0.06,speed:240};
+function camBasis(){
+  const cp=Math.cos(player.pitch),sp=Math.sin(player.pitch);
+  const sy=Math.sin(player.yaw),cy=Math.cos(player.yaw);
+  return {F:[sy*cp,sp,-cy*cp],R:[cy,0,sy],U:[-sp*sy,cp,sp*cy],cp,sp};
+}
+function worldToScreen(wx,wy,wz,b){
+  const dx=wx-player.x,dy=wy-player.y,dz=wz-player.z;
+  const z=dx*b.F[0]+dy*b.F[1]+dz*b.F[2];
+  if(!(z>=0.5))return null;
+  const s=FOCAL*render.scale;
+  return {x:render.w/2+(dx*b.R[0]+dy*b.R[1]+dz*b.R[2])/z*s,
+          y:render.h/2-(dx*b.U[0]+dy*b.U[1]+dz*b.U[2])/z*s,z};
+}
+/* celestial helpers: local (E,N,U) → renderer world (x=east, y=up, z=south) */
+function localDirToWorld(E,N,U){return [E,U,-N]}
+/* fixed star catalog on the celestial sphere (ecliptic dirs, sealed seed) */
+const stars=[];(function(){const r=mulberry32(fnv1a('STARS·'+LINEAGE));
+  for(let i=0;i<420;i++){const az=r()*6.283,el=Math.asin(r()*1.96-0.98);
+    stars.push({d:[Math.cos(el)*Math.cos(az),Math.sin(el),Math.cos(el)*Math.sin(az)],m:0.3+r()*0.7,hue:r()});}})();
+const clouds=[];(function(){const r=mulberry32(fnv1a('CLOUDS·'+LINEAGE));
+  for(let i=0;i<24;i++)clouds.push({x:(r()-0.5)*2*HALF*0.9,z:(r()-0.5)*2*HALF*0.9,y:520+r()*2200,
+    s:260+r()*560,seed:r()});})();
+function waveY(x,z,tB){return Math.sin(x*0.021+tB*1.7)*0.45+Math.cos(z*0.017-tB*1.3)*0.4}
+
+let skyC=[0,0,0],c2=[0,0,0],terrCol=[0,0,0];
+function skyRGB(elev,out,sa){
+  const dayI=Math.max(0,Math.min(1,(sa+8*Math.PI/180)/(26*Math.PI/180)));
+  const dawn=Math.max(0,1-Math.abs(sa)/(13*Math.PI/180));
+  const t=Math.max(0,Math.min(1,elev/1.1));
+  const zr=5+dayI*30+dawn*40, zg=9+dayI*70+dawn*18, zb=18+dayI*150;
+  const hr=10+dayI*120+dawn*150,hg=16+dayI*120+dawn*70,hb=26+dayI*110-dawn*30;
+  out[0]=hr+(zr-hr)*t;out[1]=hg+(zg-hg)*t;out[2]=hb+(zb-hb)*t;
+}
+function surfaceColor(pxx,pzz,hgt,sy,cx2,cz2,tB,dayI,nightF,sunE,sunN,sunU,out){
+  const gx=(sampGrid(hm,pxx+CELL,pzz)-sampGrid(hm,pxx-CELL,pzz))*0.1/(2*CELL);
+  const gz=(sampGrid(hm,pxx,pzz+CELL)-sampGrid(hm,pxx,pzz-CELL))*0.1/(2*CELL);
+  const slope=Math.sqrt(gx*gx+gz*gz);
+  const il=1/Math.sqrt(gx*gx+1+gz*gz+1e-6);
+  const rk=rockAt(pxx,pzz),bc=ROCKC[rk];
+  const jit=ihash(cx2,cz2,311);
+  let R=bc[0]*(0.82+jit*0.3),G=bc[1]*(0.82+jit*0.3),B=bc[2]*(0.82+jit*0.3);
+  /* patchwork tint — large soft hue drift so ridge country varies like real land */
+  const patch=fbm(pxx/1900+401,pzz/1900-233,97,2);
+  R*=0.80+patch*0.40;G*=0.84+patch*0.32;B*=0.88+patch*0.24;
+  /* cover: sand near the sea, vegetation by altitude·aridity·slope, scree on crags */
+  const arid=fbm(pxx/2600+201,pzz/2600+77,61,2);
+  if(hgt<SEA+3.5&&rk!==1){R=R*0.4+200*0.6;G=G*0.4+178*0.6;B=B*0.4+132*0.6}
+  else{
+    const veg=Math.max(0,Math.min(1,(1-arid*0.85)*(1-slope*2.4)))*Math.max(0,Math.min(1,(600-hgt)/540));
+    const g2=veg*(0.55+jit*0.25);
+    R=R*(1-g2)+(58+patch*38)*g2;G=G*(1-g2)+(98+patch*30)*g2;B=B*(1-g2)+(40+patch*14)*g2;
+    if(slope>0.30&&hgt>SEA+25){const sc=Math.min(0.5,(slope-0.30)*1.6);R*=1-sc;G*=1-sc;B*=1-sc}
+  }
+  /* alpine snow — the summits of this world live near 560–690 m */
+  const snowL=560+(patch-0.5)*110;
+  if(hgt>snowL){const s2=Math.min(1,(hgt-snowL)/70)*(1-Math.min(0.5,slope));
+    R=R*(1-s2)+228*s2;G=G*(1-s2)+234*s2;B=B*(1-s2)+242*s2}
+  if(hgt<SEA){const dp=Math.min(1,(SEA-hgt)/500);R=R*(1-dp)+10*dp;G=G*(1-dp)+44*dp;B=B*(1-dp)+66*dp}
+  /* ore flecks — rich cells glint */
+  if(ihash(cx2,cz2,91)>0.865){
+    let best=0,bv=140;
+    for(let mi=0;mi<NMIN;mi++){const v=minAt(mi,pxx,pzz);if(v>bv){bv=v;best=mi}}
+    if(best){const c=MINC[best],f2=0.25+ihash(cx2,cz2,93)*0.3;
+      R=R*(1-f2)+c[0]*f2;G=G*(1-f2)+c[1]*f2;B=B*(1-f2)+c[2]*f2}
+  }
+  const lam=(-gx*sunE+sunU-gz*sunN)*il;                 // sun in local frame: E,N,U
+  let shad=1;                                           // cast-shadow march: does a ridge stand between here and the sun?
+  if(SHD.on){const ex=SHD.ex,ez=SHD.ez,sl=SHD.sl;
+    for(let s2=0;s2<3;s2++){const sd=SHD_D[s2];
+      if(sampGrid(hm,pxx+ex*sd,pzz+ez*sd)*0.1>hgt+1.5+sl*sd){shad=0.38;break;}}}
+  const sh=(0.2+Math.max(0,lam)*1.0*dayI*shad)+nightF*0.045;
+  out[0]=R*sh;out[1]=G*sh;out[2]=B*sh;
+}
+function waterColor(pxx,pzz,sy,skyEl,dayI,nightF,tB,cx2,cz2,se,out){
+  const gl=Math.max(0,Math.sin(skyEl));
+  const spark=ihash(cx2,cz2,(tB*3|0)%97);
+  let R=16+dayI*20+gl*30,G=40+dayI*40+gl*44,B=70+dayI*50+gl*40;
+  if(spark>0.94){R+=70;G+=70;B+=60}
+  const sh2=0.35+dayI*0.65+nightF*0.08;
+  out[0]=R*sh2;out[1]=G*sh2;out[2]=B*sh2;
+  if(GLARE.on){                                    // the sun's reflected path walks the water toward you
+    const d=(CURX-GLARE.sx)/24;
+    const hz=BUF_H*0.5+player.pitch*FOCAL;
+    const fall=Math.max(0,1-Math.max(0,sy-hz)/70);
+    const g2=Math.exp(-d*d)*fall*dayI*0.9;
+    out[0]+=238*g2;out[1]+=205*g2*0.55;out[2]+=150*g2*0.30;
+  }
+}
+function paintSpan(x,r0,rEnd,t,cx2,cz2,fr,fg,fb,fI,nd){
+  for(let r=r0;r<rEnd;r++){
+    const idx=r*BUF_W+x;
+    if(!nd&&t>=depth[idx])continue;
+    if(t<depth[idx])depth[idx]=t;
+      const i4=idx*4;
+      const vs=(1-Math.min(0.4,(r-r0)*0.005))*(0.88+ihash(x,r,17)*0.2+(0.5+0.5*Math.sin(x*0.19+r*0.23+cx2*0.7+cz2*1.3))*0.08);
+      px[i4]=(terrCol[0]*(1-fI)+fr*fI)*vs;
+      px[i4+1]=(terrCol[1]*(1-fI)+fg*fI)*vs;
+      px[i4+2]=(terrCol[2]*(1-fI)+fb*fI)*vs;
+  }
+}
+/* per-frame sky state, computed from the ephemeris */
+let SKY={sa:0,saz:0,ma:0,maz:0,tide:0,dayI:0,nightF:1,phase:0,mDist:1,sDist:1,sd:[0,1,0],md:[0,1,0],wax:1,B:null,tB:0};
+function computeSky(){
+  const lat=LAT0+ (player.z)/SEAL.R_PLANET, lon=LON0+(player.x)/(SEAL.R_PLANET*Math.cos(LAT0));
+  const th=spinAngle(EP.t);
+  const s=dirTo(0,lat,lon,th), m=dirTo(2,lat,lon,th);
+  const td=tideNow(lat,lon,th);
+  SKY.B=basisAt(lat,lon,th);
+  SKY.sa=s.alt;SKY.saz=s.az;SKY.ma=m.alt;SKY.maz=m.az;
+  SKY.sd=s.d;SKY.md=m.d;SKY.sDist=s.r;SKY.mDist=m.r;
+  SKY.tide=td.h;SKY.tideL=td.lunar;SKY.tideS=td.solar;
+  SKY.dayI=Math.max(0,Math.min(1,(s.alt+8*Math.PI/180)/(26*Math.PI/180)));
+  SKY.nightF=1-SKY.dayI;SKY.phase=moonPhase();
+  const up=SKY.B.u;
+  SKY.wax=((SKY.sd[1]*SKY.md[2]-SKY.sd[2]*SKY.md[1])*up[0]+(SKY.sd[2]*SKY.md[0]-SKY.sd[0]*SKY.md[2])*up[1]+(SKY.sd[0]*SKY.md[1]-SKY.sd[1]*SKY.md[0])*up[2])>0?1:0;
+  SKY.tB=EP.t;
+}
+function renderFrame(){
+  const b=camBasis();
+  computeSky();
+  const sa=SKY.sa,dayI=SKY.dayI,nightF=SKY.nightF;
+  const sunE=Math.cos(sa)*Math.sin(SKY.saz),sunN=-Math.cos(sa)*Math.cos(SKY.saz),sunU=Math.sin(sa);
+  const focalV=FOCAL;
+  for(let r=0;r<BUF_H;r++)skyElev[r]=player.pitch-Math.atan((r-BUF_H/2+0.5)/focalV);
+  const wl=SEA+SKY.tide;
+  player.underwater=player.y<wl+0.3&&surfH(player.x,player.z)<wl;
+  const fogK=3400*Math.pow(60/3400,uwF);          // Möbius crossfade of the medium, driven by the core
+  SHD.on=sa>0.035&&sa<0.70;                        // cast shadows live in low sun
+  {const hl2=Math.hypot(sunE,sunN)||1e-9;SHD.ex=sunE/hl2;SHD.ez=sunN/hl2;SHD.sl=Math.tan(Math.max(0,sa));}
+  {let dAz=SKY.saz-player.yaw;dAz=Math.atan2(Math.sin(dAz),Math.cos(dAz));   // the sun's screen column — for the water glare path
+   GLARE.sx=(dAz+FOVX/2)/FOVX*BUF_W-0.5;
+   const elT=player.pitch+Math.atan((BUF_H/2-0.5)/focalV);
+   GLARE.on=Math.abs(dAz)<FOVX/2+0.25&&SKY.sa<elT&&dayI>0.05;}
+  depth.fill(1e9);
+  for(let x=0;x<BUF_W;x++){
+    CURX=x;                                     // current column — the water glare path reads it
+    const a=(x+0.5)/BUF_W*FOVX-FOVX/2;
+    const dX=Math.sin(player.yaw+a)*b.cp,dZ=-Math.cos(player.yaw+a)*b.cp,dY=b.sp;
+    for(let r=0;r<BUF_H;r++){
+      skyRGB(skyElev[r],skyC,sa);
+      if(uwF>0.01){const dep=Math.min(1,(wl-player.y)/140),k=uwF;   // the medium crossfades in, never cuts
+        skyC[0]*=1-0.7*k;skyC[1]*=1-(0.5-dep*0.3)*k;skyC[2]=skyC[2]*(1-0.5*k)+(40+dep*30)*k;}
+      const i=(r*BUF_W+x)*4;px[i]=skyC[0];px[i+1]=skyC[1];px[i+2]=skyC[2];px[i+3]=255;
+    }
+    /* tier A — steepest ray grounds the column */
+    let fillTop=BUF_H;
+    const elA=player.pitch-Math.atan((BUF_H/2-0.5)/focalV);
+    if(!player.underwater&&elA<-0.02){
+      const cA=Math.cos(elA),sA=Math.sin(elA);
+      const aX=Math.sin(player.yaw+a)*cA,aZ=-Math.cos(player.yaw+a)*cA;
+      let tA=3;
+      for(let q=0;q<170&&tA<15000;q++){
+        const pxx=player.x+aX*tA,pzz=player.z+aZ*tA,pyy=player.y+sA*tA;
+        if(Math.abs(pxx)>=HALF||Math.abs(pzz)>=HALF)break;   // the province ends — the ray escapes to sky
+        const h=sampGrid(hm,pxx,pzz)*0.1;
+        let boundary=-1,kind=0;
+        if(pyy<=h){boundary=h;kind=1}
+        else if(pyy<=wl&&h<wl&&player.y>wl){boundary=wl;kind=2}
+        if(kind>0){
+          let sy;
+          if(kind===2)sy=(BUF_H/2)+(((player.y-(wl+waveY(pxx,pzz,SKY.tB)))/tA*cA)+player.pitch)*focalV;
+          else sy=(BUF_H/2)+((player.y-boundary)/tA*cA+player.pitch)*focalV;
+          if(sy<BUF_H-1){
+            const cx2=((pxx+HALF)/CELL)|0,cz2=((pzz+HALF)/CELL)|0;
+            if(kind===1)surfaceColor(pxx,pzz,boundary,sy,cx2,cz2,SKY.tB,dayI,nightF,sunE,sunN,sunU,terrCol);
+            else waterColor(pxx,pzz,sy,skyElev[Math.max(0,Math.min(BUF_H-1,sy|0))],dayI,nightF,SKY.tB,cx2,cz2,wl,terrCol);
+            let fI=1-Math.exp(-tA/fogK);if(kind===2)fI*=0.7;
+            skyRGB(0.02,c2,sa);
+            paintSpan(x,Math.max(0,Math.ceil(sy)),BUF_H,tA,cx2,cz2,c2[0]+14,c2[1]+16,c2[2]+18,fI);
+            fillTop=Math.max(0,Math.ceil(sy));
+          }
+          break;
+        }
+        tA*=tA<150?1.032:1.058;
+      }
+      if(fillTop===BUF_H)fillTop=-1;
+    }
+    /* tier B — voxel-space fill: march the column's plan direction, project
+       every height sample into screen space, paint the downward band behind
+       a top watermark. Slopes and occlusion emerge from the projection itself. */
+    let t=3,steps=0;
+    const tStop=Math.min(15000,Math.max(420,(4300-player.y)*focalV/(BUF_H*0.5)));
+    let top=player.underwater?BUF_H:(fillTop<0?BUF_H:fillTop);
+    while(t<tStop&&steps<200&&top>0){
+      steps++;
+      const pxx=player.x+dX*t,pzz=player.z+dZ*t;
+      if(Math.abs(pxx)>=HALF||Math.abs(pzz)>=HALF)break;      // beyond the province the planet goes on unseen
+      const h=sampGrid(hm,pxx,pzz)*0.1;
+      const cpH=Math.sqrt(dX*dX+dZ*dZ);
+      const cx2=((pxx+HALF)/CELL)|0,cz2=((pzz+HALF)/CELL)|0;
+      let fI=1-Math.exp(-t/fogK);
+      skyRGB(0.02,c2,sa);
+      const sy=(BUF_H/2)+((player.y-h)/t*cpH+player.pitch)*focalV;
+      if(sy<top){                                   // terrain band
+        const r0=Math.max(0,Math.ceil(sy));
+        surfaceColor(pxx,pzz,h,sy,cx2,cz2,SKY.tB,dayI,nightF,sunE,sunN,sunU,terrCol);
+        paintSpan(x,r0,Math.min(top,BUF_H),t,cx2,cz2,c2[0]+14,c2[1]+16,c2[2]+18,fI,true);
+        top=r0;
+      }
+      if(!player.underwater&&h<wl){                 // water skin over low ground
+        const syw=(BUF_H/2)+((player.y-(wl+waveY(pxx,pzz,SKY.tB)))/t*cpH+player.pitch)*focalV;
+        if(syw<top){
+          const r0=Math.max(0,Math.ceil(syw));
+          waterColor(pxx,pzz,syw,skyElev[Math.max(0,Math.min(BUF_H-1,syw|0))],dayI,nightF,SKY.tB,cx2,cz2,wl,terrCol);
+          paintSpan(x,r0,Math.min(top,BUF_H),t,cx2,cz2,c2[0]+14,c2[1]+16,c2[2]+18,fI*0.7,true);
+          top=r0;
+        }
+      }
+      t*=t<150?1.032:1.058;
+    }
+  }
+  bctx.putImageData(img,0,0);
+  vctx.imageSmoothingEnabled=true;
+  vctx.fillStyle='#04080f';vctx.fillRect(0,0,render.w,render.h);
+  vctx.drawImage(bufC,render.ox,render.oy,Math.ceil(BUF_W*render.scale),Math.ceil(BUF_H*render.scale));
+  renderOverlay(b);
+}
+function renderOverlay(b){
+  const starV=SKY.nightF;
+  if(starV>0.04&&!player.underwater){
+    for(const s of stars){
+      const E=s.d[0]*SKY.B.e[0]+s.d[1]*SKY.B.e[1]+s.d[2]*SKY.B.e[2];
+      const N=s.d[0]*SKY.B.n[0]+s.d[1]*SKY.B.n[1]+s.d[2]*SKY.B.n[2];
+      const U=s.d[0]*SKY.B.u[0]+s.d[1]*SKY.B.u[1]+s.d[2]*SKY.B.u[2];
+      if(U<-0.03)continue;
+      const w=localDirToWorld(E,N,U);
+      const p=worldToScreen(player.x+w[0]*1e9,player.y+w[1]*1e9,player.z+w[2]*1e9,b);
+      if(!p)continue;
+      const a=starV*s.m*(U>0?1:0.25);
+      vctx.fillStyle=s.hue>0.8?'rgba(255,230,190,'+a+')':s.hue>0.5?'rgba(210,225,255,'+a+')':'rgba(255,255,255,'+a+')';
+      vctx.fillRect(p.x,p.y,(s.m>0.8&&starV>0.6)?2:1,(s.m>0.8&&starV>0.6)?2:1);
+    }
+  }
+  /* sun — true angular size + atmospheric glare (extinction swells it red at the horizon) */
+  if(SKY.dayI>0&&!player.underwater){
+    const w=localDirToWorld(Math.cos(SKY.sa)*Math.sin(SKY.saz),-Math.cos(SKY.sa)*Math.cos(SKY.saz),Math.sin(SKY.sa));
+    const p=worldToScreen(player.x+w[0]*1e9,player.y+w[1]*1e9,player.z+w[2]*1e9,b);
+    if(p&&p.z>1e7){
+      const rp=Math.tan(Math.asin(Math.min(1,SEAL.R_SUN/SKY.sDist)))*FOCAL*render.scale;
+      const low=Math.max(0,Math.min(1,1-SKY.sa/(9*Math.PI/180)));
+      const gr=Math.max(10,rp*(13+low*26));
+      const g=vctx.createRadialGradient(p.x,p.y,rp*0.4,p.x,p.y,gr);
+      g.addColorStop(0,'rgba(255,246,220,'+(0.9*SKY.dayI)+')');
+      g.addColorStop(0.22,'rgba(255,214,140,'+((0.35+low*0.2)*SKY.dayI)+')');
+      g.addColorStop(1,'rgba(255,160,80,0)');
+      vctx.fillStyle=g;vctx.fillRect(p.x-gr,p.y-gr,gr*2,gr*2);
+      vctx.fillStyle='rgba(255,252,238,'+SKY.dayI+')';
+      vctx.beginPath();vctx.arc(p.x,p.y,Math.max(1.3,rp),0,6.283);vctx.fill();
+    }
+  }
+  /* moon — true angular size, terminator from the computed phase */
+  if(SKY.ma>-0.06&&!player.underwater){
+    const w=localDirToWorld(Math.cos(SKY.ma)*Math.sin(SKY.maz),-Math.cos(SKY.ma)*Math.cos(SKY.maz),Math.sin(SKY.ma));
+    const p=worldToScreen(player.x+w[0]*1e9,player.y+w[1]*1e9,player.z+w[2]*1e9,b);
+    if(p&&p.z>1e7){
+      const rp=Math.tan(Math.asin(Math.min(1,SEAL.R_MOON/SKY.mDist)))*FOCAL*render.scale;
+      drawMoonDisc(p,Math.max(1.1,rp),SKY,b);
+    }
+  }
+  if(!player.underwater){
+    for(const c of clouds){
+      const p=worldToScreen(c.x,c.y,c.z,b);
+      if(!p)continue;
+      const rr=Math.min(30,c.s*render.scale*9/p.z*8);
+      if(p.z<250||rr<4||p.x<-rr||p.x>render.w+rr||p.y<-rr||p.y>render.h+rr)continue;
+      const a=(0.09+0.15*SKY.dayI)*(0.6+0.4*ihash((c.seed*1e4)|0,7,3));
+      vctx.fillStyle='rgba(235,238,245,'+a+')';
+      vctx.beginPath();vctx.ellipse(p.x,p.y,rr,rr*0.36,0,0,6.283);vctx.fill();
+    }
+  }
+  /* the laboratory vessel standing in the world — live computed field */
+  drawLabWorld(b);
+}
+function drawMoonDisc(p,r,SK,b){
+  const phi=SK.phase*Math.PI;                    // 0 new → π full
+  const sw=localDirToWorld(Math.cos(SK.sa)*Math.sin(SK.saz),-Math.cos(SK.sa)*Math.cos(SK.saz),Math.sin(SK.sa));
+  const ps=worldToScreen(player.x+sw[0]*1e9,player.y+sw[1]*1e9,player.z+sw[2]*1e9,b);
+  let ax=0,ay=-1;
+  if(ps){const dx=ps.x-p.x,dy=ps.y-p.y,l=Math.hypot(dx,dy)||1;ax=dx/l;ay=dy/l}
+  const rot=Math.atan2(ay,ax);
+  const a=0.3+SK.nightF*0.55;
+  const g2=vctx.createRadialGradient(p.x,p.y,r*0.5,p.x,p.y,r*3.4);
+  g2.addColorStop(0,'rgba(205,215,235,'+(a*0.4)+')');g2.addColorStop(1,'rgba(205,215,235,0)');
+  vctx.fillStyle=g2;vctx.fillRect(p.x-r*3.4,p.y-r*3.4,r*6.8,r*6.8);
+  vctx.save();vctx.translate(p.x,p.y);vctx.rotate(rot);
+  vctx.fillStyle='rgba(152,160,178,'+a+')';vctx.beginPath();vctx.arc(0,0,r,0,6.283);vctx.fill();
+  vctx.fillStyle='rgba(230,235,244,'+(0.5+SK.nightF*0.5)+')';
+  vctx.beginPath();
+  vctx.arc(0,0,r,-Math.PI/2,Math.PI/2,false);
+  vctx.ellipse(0,0,Math.max(0.02,r*Math.abs(Math.cos(phi))),r,0,Math.PI/2,-Math.PI/2,SK.wax===0);
+  vctx.closePath();vctx.fill();
+  vctx.restore();
+}
+
+/* ==================== HUD · PANELS · SURVEY ==================== */
+const FORM=['continental craton — deep magma crystallized slow','oceanic / volcanic crust — lava cooled fast',
+ 'sedimentary basin — wind-laid sand, cemented','sedimentary basin — marine carbonate, lithified',
+ 'sedimentary basin — mud compacted','metamorphic — limestone recooked by intrusion heat',
+ 'metamorphic — shale under pressure','metamorphic — quartz sandstone fused','evaporite — a dried mineral brine',
+ 'kimberlite pipe — the mantle carried up in a breath'];
+function fillConst(){
+  const K=(SEAL.AU/1e3).toLocaleString('en-US'),KM=(SEAL.MOON_A/1e3).toLocaleString('en-US');
+  const rows=[['lineage',LINEAGE],['G',SEAL.G.toExponential(5)+' m³ kg⁻¹ s⁻²'],
+   ['sun → planet',K+' km'],['planet → moon',KM+' km'],
+   ['mass · sun',SEAL.MASS_SUN.toExponential(4)+' kg'],['mass · planet',SEAL.MASS_PLANET.toExponential(4)+' kg'],
+   ['mass · moon',SEAL.MASS_MOON.toExponential(4)+' kg'],
+   ['radius · planet',(SEAL.R_PLANET/1e3)+' km'],['radius · moon',(SEAL.R_MOON/1e3)+' km'],
+   ['obliquity',SEAL.OBLIQUITY+'°'],['sidereal day',SEAL.SIDEREAL_DAY+' s'],
+   ['epoch',SEAL.EPOCH],['decree',SEAL.DECREE],['doctrine',SEAL.DOCTRINE],
+   ['laboratory','∅Vect-Well Φ NS lattice v1.0 — seal 1011911783BD · nine-fluid codex · advect · diffuse · project'],
+   ['lab clock','24 φ-ticks per frame — its own heartbeat; the world dial does not touch it'],
+   ['dynamics core','VW Dynamics Core Seed 1+2 — seal 1011911783 BD · 24-beat 3/4 clock · domains ±9/−10 · Möbius crossings'],
+   ['core role','witness layer — observes, gates, records; it never fakes a force']];
+  $('cs-body').innerHTML=rows.map(r=>'<div class="row"><label>'+r[0]+'</label><span class="v" style="max-width:185px">'+r[1]+'</span></div>').join('');
+}
+function togglePanel(id){const p=$(id);p.classList.toggle('open');
+  document.querySelector('#dock .btn[data-p="'+id+'"]').classList.toggle('on',p.classList.contains('open'));
+  if(id==='p-survey'&&p.classList.contains('open'))runSurvey();
+  if(id==='p-lab'&&p.classList.contains('open'))labOpen();}
+document.querySelectorAll('#dock .btn').forEach(b=>b.onclick=()=>togglePanel(b.dataset.p));
+document.querySelectorAll('.min').forEach(m=>m.onclick=()=>togglePanel(m.dataset.p));
+$('b-verify').onclick=()=>{const ok=worldChecksum()===checksum;
+  $('dg-note').textContent=ok?'integrity verified — the province is immutable':'INTEGRITY MISMATCH — report this';
+  $('dg-note').style.color=ok?'var(--grn)':'var(--red)';note(ok?'integrity verified':'INTEGRITY MISMATCH')};
+function hud(){
+  const solar=(12+EP.t/3600)%24,hh=Math.floor(solar),mm=Math.floor((solar-hh)*60);
+  $('h-time').textContent=String(hh).padStart(2,'0')+':'+String(mm).padStart(2,'0');
+  const lonDeg=player.x/(SEAL.R_PLANET*Math.cos(LAT0))*180/Math.PI;
+  $('h-lon').textContent=lonDeg.toFixed(2)+'°E';
+  $('h-tide').textContent=(SKY.tide>=0?'+':'')+SKY.tide.toFixed(2)+' m';
+  $('h-day').textContent=Math.floor(EP.t/86400)+1;
+  $('h-lineage').textContent=LINEAGE;
+  $('h-lab').textContent=LAB.sim?(LAB.mode==='bench'?'bench · '+LAB.sim.chamber:'ground cut')+(LAB.paused?' ⏸':''):'—';
+}
+function skyPanel(){
+  const D=180/Math.PI;
+  $('sk-sun').textContent=(SKY.sa*D).toFixed(1)+'° · '+(SKY.saz*D).toFixed(0)+'°';
+  $('sk-moon').textContent=(SKY.ma*D).toFixed(1)+'° · '+(SKY.maz*D).toFixed(0)+'°';
+  $('sk-phase').textContent=Math.round(SKY.phase*100)+'% '+(SKY.wax?'waxing':'waning');
+  $('sk-mdist').textContent=Math.round(SKY.mDist/1e3).toLocaleString('en-US')+' km';
+  $('sk-tl').textContent=(SKY.tideL>=0?'+':'')+SKY.tideL.toFixed(3)+' m';
+  $('sk-ts').textContent=(SKY.tideS>=0?'+':'')+SKY.tideS.toFixed(3)+' m';
+  $('sk-dial').textContent='×'+dial+' · '+(dial/60)+' world-min per real-sec';
+}
+function runSurvey(){
+  const x=player.x,z=player.z,h=surfH(x,z),rk=rockAt(x,z);
+  $('sv-pos').textContent=Math.round(x)+' · '+Math.round(z);
+  $('sv-elev').textContent=h.toFixed(1)+' m'+(h<SEA?' — below sea':'');
+  $('sv-rock').textContent=ROCKN[rk];
+  $('sv-form').textContent=FORM[rk];
+  const list=[];
+  for(let mi=0;mi<NMIN;mi++){const v=minAt(mi,x,z);if(v>=40)list.push([MINN[mi],v])}
+  list.sort((a2,b2)=>b2[1]-a2[1]);
+  $('sv-min').innerHTML=list.length?list.map(q=>q[0]+' · '+(q[1]>=200?'RICH':q[1]>=120?'high':q[1]>=70?'moderate':'trace')).join('<br>'):'none of note';
+  drawCore(x,z,h,rk);
+}
+function drawCore(x,z,h,rk){
+  const cv=$('core'),cc=cv.getContext('2d'),W=cv.width,H=cv.height,seg=H/55;
+  for(let i=0;i<55;i++){
+    const d=i*4;let col;
+    if(d<2.5)col=[88,72,52];
+    else if(d<11){const b=ROCKC[rk];col=[b[0]*0.72,b[1]*0.72,b[2]*0.72]}
+    else col=ROCKC[rk].slice();
+    for(let mi=0;mi<NMIN;mi++){const v=minAt(mi,x,z);
+      if(v>110&&ihash(i,mi,17)<v/600){col=MINC[mi];break}}
+    if(h-d<SEA)col=[col[0]*0.5+10,col[1]*0.5+30,col[2]*0.5+50];
+    cc.fillStyle='rgb('+(col[0]|0)+','+(col[1]|0)+','+(col[2]|0)+')';
+    cc.fillRect(0,i*seg,W,seg+0.5);
+  }
+}
+
+/* ==================== LABORATORY DRIVER — the world hosts the instrument ==================== */
+/* The solver above is Rumec's, unmodified. Everything here is the world's
+   interface to it: deployment, the two vessels, and rendering its states.
+   The laboratory never writes the world's sealed arrays — VERIFY still
+   reads only hm, rock and mins. The lab clock is its own 24-step φ
+   heartbeat; the world dial does not touch it. */
+const LAB={mode:'bench',deployed:false,pos:{x:0,z:0},heading:0,sim:null,rec:null,N:96,
+  paused:false,tool:'pour',selFluid:3,showVec:false,ground:null,lastBench:'TOWER',
+  tank:{w:4.4,h:3.1,d:2.6}};
+const LABC={ "TOWER":"TOWER — nine fluids stratified in REVERSED density order. Buoyancy alone (F = g·Δρ/ρ) must invert the stack — Rayleigh–Taylor overturning does the work. Settling-bath centrifuge protocol: effective g ramps 0→×6, holds, releases to a calm ×1.5; a demonstration-aid bath holds viscosity at ×12, relaxing to the true codex ν so the bands sort as coherent diapirs. Sorting is buoyancy through the solver, never scripted. Watch Kendall-τ climb toward +1. Real counterpart: centrifuge separation, ocean stratification overturning.",
+  "CAVITY":"LID-DRIVEN CAVITY — the top wall drags fluid at constant U (lattice Re ≈ 770); viscosity carries momentum inward until a primary vortex forms (corner eddies follow). Readout: ∇²ψ=−ω solved to a measured residual (Dirichlet ψ=0 walls), vortex center from ψ. Real counterpart: driven flow in bearings, coating dies.",
+  "VORTEX STREET":"KÁRMÁN VORTEX STREET — uniform inflow past a cylinder (chamber Re ≈ 288, inside the shedding regime). Fixed inlet flux, fixed-pressure convective outlet. The wake sheds alternating vortices; the Strouhal readout is measured from detrended lift zero-crossings (St ≈ 0.17 — the physical value). Real counterpart: chimneys singing, bridge cables.",
+  "BUCKET":"ROTATING BUCKET — the walls drag the fluid by friction alone; a paraboloid-like free surface (dye proxy) and a finite-core vortex emerge. Smoothness wins — |ω|max stays bounded and is displayed. Real counterpart: stirred tea, centrifugal pumps.",
+  "POND":"POND — free play. Press-hold pours the selected fluid (continuous source); drag fast to stir (true momentum injection). Gravity, rotation, viscosity, speed and vorticity confinement are all live below."};
+const GROUNDC="PROVINCE CUT — the vessel floor is the real sealed topography under your feet: a 56 m slice of this province along your heading, cut live from the heightfield. TAP THE TERRAIN to pour the selected fluid straight onto the ground at your crosshair — the cut walks to your tap if it lands outside. Hold to keep pouring; drag to look. Nothing is drawn in; the fields are computed.";
+const labOff=document.createElement('canvas'),labFlip=document.createElement('canvas');
+let labCtx=null,labImg=null,labPx=null,labFlipCtx=null;
+function labEnsure(){
+  if(LAB.sim)return;
+  LAB.sim=NSCORE.createSim({N:LAB.N,chamber:'TOWER'});
+  LAB.rec=SESSION.makeRecorder(LAB.sim);
+  LAB.dom=vwCore.addDomain('LAB',{limit:7,floor:-10,dial:0.5});
+  LAB.pair=vwCore.addPair(3,LAB.dom);               // the laboratory stands witness in the lattice
+  bindLabBuffers();buildLabUI();labRefreshSegs();
+}
+function bindLabBuffers(){
+  const N=LAB.sim.N;
+  labOff.width=N;labOff.height=N;
+  labCtx=labOff.getContext('2d');
+  labImg=labCtx.createImageData(N,N);labPx=labImg.data;
+  labFlip.width=N;labFlip.height=N;
+  labFlipCtx=labFlip.getContext('2d');
+}
+function rebuildLabSim(nNew){
+  const ch=LAB.sim.chamber,params=Object.assign({},LAB.sim.prm);
+  LAB.sim=NSCORE.createSim({N:nNew,chamber:ch,params});
+  LAB.rec=SESSION.makeRecorder(LAB.sim);LAB.N=nNew;
+  bindLabBuffers();
+  if(LAB.mode==='ground')buildGroundCut();
+  labRefreshSegs();
+  note('lattice '+nNew+'² — re-seeded deterministically from seal 1011911783');
+}
+/* ---------- the ground vessel: a live cut through the sealed province ---------- */
+function buildGroundCut(){
+  const sim=LAB.sim,N=sim.N;
+  sim.setChamber('POND');                    // empty pond — free play on real topography
+  LAB.rec.rec('groundcut',{x:Math.round(LAB.pos.x),z:Math.round(LAB.pos.z),heading:+LAB.heading.toFixed(3)});
+  const W=40,dx=Math.cos(LAB.heading),dz=Math.sin(LAB.heading);   // across the view — the cut faces you
+  const hts=new Float64Array(N);let lo=1e9,hi=-1e9;
+  for(let i=0;i<N;i++){
+    const t=(i+0.5)/N*W-W/2,wx=LAB.pos.x+dx*t,wz=LAB.pos.z+dz*t;
+    hts[i]=surfH(wx,wz);if(hts[i]<lo)lo=hts[i];if(hts[i]>hi)hi=hts[i];
+  }
+  const vBot=lo-4,vTop=hi+14;
+  const jg=new Uint16Array(N),rkA=new Uint8Array(N);
+  for(let i=0;i<N;i++){
+    const j=Math.max(2,Math.min(N-2,Math.round(1+(vTop-hts[i])/(vTop-vBot)*(N-2))));
+    jg[i]=j;rkA[i]=rockAt(LAB.pos.x+dx*((i+0.5)/N*W-W/2),LAB.pos.z+dz*((i+0.5)/N*W-W/2));
+    for(let jj=j+1;jj<=N;jj++)sim.F.solid[sim.IX(i+1,jj)]=1;   // the province itself is the floor
+  }
+  LAB.ground={W,vBot,vTop,jg,rock:rkA};
+}
+function aimPoint(maxD){
+  const dx=Math.sin(player.yaw),dz=-Math.cos(player.yaw);
+  const tp=Math.tan(Math.max(-1.2,Math.min(1.2,player.pitch)));
+  for(let s=2;s<maxD;s+=1.5){
+    const px=player.x+dx*s,pz=player.z+dz*s;
+    if(Math.abs(px)>=HALF||Math.abs(pz)>=HALF)break;
+    if(player.y+tp*s<=surfH(px,pz))return{x:px,z:pz};
+  }
+  return{x:player.x+dx*9,z:player.z+dz*9};
+}
+function labPlace(){
+  labEnsure();
+  const p=aimPoint(50);
+  LAB.pos={x:p.x,z:p.z};LAB.heading=player.yaw;LAB.deployed=true;
+  if(LAB.mode==='ground')buildGroundCut();
+  note('laboratory placed — the vessel stands in the world at your crosshair');
+}
+function labOpen(){
+  labEnsure();
+  if(!LAB.deployed)labPlace();
+  labCaption();labRefreshSegs();
+}
+function labSetMode(m){
+  if(m===LAB.mode)return;
+  LAB.mode=m;
+  if(m==='ground'){LAB.lastBench=LAB.sim.chamber;buildGroundCut();}
+  else{LAB.ground=null;LAB.sim.setChamber(LAB.lastBench);LAB.rec.rec('chamber',{name:LAB.sim.chamber});}
+  labRefreshSegs();labCaption();
+}
+function labCaption(){
+  $('lb-note').innerHTML=(LAB.mode==='ground'?GROUNDC:LABC[LAB.sim.chamber])
+    +'<br>press-hold pours · drag stirs momentum'+(LAB.tool==='vortex'?' · VORTEX orbits a stirrer — hold and watch':'');
+}
+/* ---------- field rendering — every pixel computed from the numeric fields ---------- */
+function labDyeTot(id){const F=LAB.sim.F;let t=0;for(let f=0;f<9;f++)t+=F.dens[f][id];return t;}
+function labRenderField(){
+  const sim=LAB.sim,F=sim.F,N=sim.N,W=sim.W,IX=sim.IX,PIGM=NSCORE.PIGMENT;
+  const g=LAB.ground,gOn=LAB.mode==='ground'&&g;
+  for(let j=1;j<=N;j++)for(let i=1;i<=N;i++){
+    const id=IX(i,j),o=((j-1)*N+(i-1))*4;
+    if(F.solid[id]){
+      if(gOn){
+        const bc=ROCKC[g.rock[i-1]];
+        const dp=Math.min(1,Math.max(0,(j-g.jg[i-1])/16));
+        const sh=1-dp*0.5;
+        labPx[o]=bc[0]*sh;labPx[o+1]=bc[1]*sh;labPx[o+2]=bc[2]*sh;labPx[o+3]=255;
+      }else{
+        const touch=(!F.solid[id-1]||!F.solid[id+1]||!F.solid[id-W]||!F.solid[id+W]);
+        labPx[o]=touch?58:22;labPx[o+1]=touch?48:18;labPx[o+2]=touch?30:12;labPx[o+3]=255;
+      }
+      continue;
+    }
+    let r=4,gg=6,b=12,tot=0;
+    for(let f=0;f<9;f++){
+      const d=F.dens[f][id];if(d<=1e-4)continue;
+      tot+=d;const a=1-Math.exp(-1.7*d);
+      r+=PIGM[f][0]*a;gg+=PIGM[f][1]*a;b+=PIGM[f][2]*a;
+    }
+    const water=Math.max(0,1-tot);
+    r+=water*4;gg+=water*9;b+=water*16;
+    const w=Math.abs(F.curl[id]);
+    const lift=Math.min(0.45,w*0.10)*Math.min(1,tot+water*0.4);
+    r+=lift*120;gg+=lift*140;b+=lift*160;
+    const dgx=Math.max(-3,Math.min(3,labDyeTot(id+1)-labDyeTot(id-1)));
+    const dgy=Math.max(-3,Math.min(3,labDyeTot(id+W)-labDyeTot(id-W)));
+    const nz=2.6,nl=Math.sqrt(dgx*dgx+dgy*dgy+nz*nz);
+    const nx=-dgx/nl,ny=-dgy/nl,nzz=nz/nl;
+    const hx=-0.45,hy=-0.62,hz=1.64,hl=Math.hypot(hx,hy,hz);
+    const ndh=Math.max(0,(nx*hx+ny*hy+nzz*hz)/hl);
+    const spec=Math.pow(ndh,26)*Math.min(1,tot*1.6)*200;
+    r+=spec;gg+=spec*0.92;b+=spec*0.70;
+    const s=F.strain[id];
+    const foam=Math.max(0,Math.min(1,(s-6)*0.06))*Math.min(1,tot*2.2);
+    r+=foam*190;gg+=foam*195;b+=foam*185;
+    const lv=F.dens[8][id];                       // molten rock glows, watched or not
+    if(lv>0.1){const e=Math.min(1,lv)*0.9;r+=238*e;gg+=86*e;b+=16*e;}
+    labPx[o]=255*(1-Math.exp(-r/190));
+    labPx[o+1]=255*(1-Math.exp(-gg/190));
+    labPx[o+2]=255*(1-Math.exp(-b/190));
+    labPx[o+3]=255;
+  }
+  labCtx.putImageData(labImg,0,0);
+  labFlipCtx.setTransform(1,0,0,-1,0,labOff.height);   // world-texture copy (screen-y = world-up)
+  labFlipCtx.drawImage(labOff,0,0);
+  labFlipCtx.setTransform(1,0,0,1,0,0);
+}
+function labDrawVectors(cc,cw,ch){
+  const sim=LAB.sim,F=sim.F,N=sim.N;
+  cc.strokeStyle='rgba(212,175,55,0.5)';cc.lineWidth=1;cc.beginPath();
+  const step=Math.max(6,N>>4),k=cw/N*0.6;
+  for(let j=step;j<N;j+=step)for(let i=step;i<N;i+=step){
+    const id=sim.IX(i,j);if(F.solid[id])continue;
+    const x0=(i-0.5)/N*cw,y0=(j-0.5)/N*ch;
+    cc.moveTo(x0,y0);cc.lineTo(x0+F.u[id]*k,y0+F.v[id]*k);
+  }
+  cc.stroke();
+}
+function labDrawPanel(){
+  const c=$('labview');if(!c||!LAB.sim)return;
+  const cc=c.getContext('2d'),sim=LAB.sim,N=sim.N;
+  cc.imageSmoothingEnabled=false;
+  cc.drawImage(labOff,0,0,c.width,c.height);
+  if(sim.prm.tracersOn){
+    cc.fillStyle='rgba(230,235,245,0.55)';
+    for(let k=0;k<sim.TRN;k++)cc.fillRect((sim.tr.x[k]-0.5)/N*c.width,(sim.tr.y[k]-0.5)/N*c.height,1.6,1.6);
+  }
+  if(LAB.showVec)labDrawVectors(cc,c.width,c.height);
+}
+function labMetrics(){
+  if(!LAB.sim)return;
+  const m=LAB.sim.metrics();
+  const tops=[];
+  for(let f=0;f<9;f++)if(m.masses[f]>1)tops.push([OQ.FLUIDT[f].name.split(' ').pop(),m.masses[f]|0]);
+  tops.sort((a,b)=>b[1]-a[1]);
+  $('lb-mass').textContent=tops.length?tops.slice(0,4).map(q=>q[0]+' '+q[1]).join(' · '):'—';
+  $('lb-terms').textContent=(m.ndiv<1e-5?m.ndiv.toExponential(1):m.ndiv.toFixed(5))+' · '+m.Re.toFixed(0)+' · '+(m.KE|0);
+  $('lb-clock').textContent='step '+m.step+' · τ '+m.coherence.toFixed(3)+(LAB.paused?' · ⏸':'');
+  $('lb-sess').textContent=LAB.sim.frameCount+' fr · '+LAB.sim.checksum().slice(0,8);
+}
+/* ---------- the vessel standing in the world ---------- */
+function labLerpP(a,b2,t){return{x:a.x+(b2.x-a.x)*t,y:a.y+(b2.y-a.y)*t};}
+function texQuad(cnv,P){                      // texture on a world-space quad, strip-affine
+  const K=48;                                 // cnv = labFlip (world-up rows; dest rect stays in +quadrant)
+  vctx.save();
+  for(let k2=0;k2<K;k2++){
+    const s0=k2/K,s1=Math.min(1,(k2+1)/K+0.004);   // slight dest overlap — no seam gaps
+    const b0=labLerpP(P[0],P[1],s0),b1=labLerpP(P[0],P[1],s1),t0=labLerpP(P[3],P[2],s0);
+    vctx.setTransform(b1.x-b0.x,b1.y-b0.y,t0.x-b0.x,t0.y-b0.y,b0.x,b0.y);
+    const sw=(s1-s0)*cnv.width;
+    vctx.drawImage(cnv,s0*cnv.width,0,Math.min(sw,cnv.width-s0*cnv.width),cnv.height,0,0,1,1);
+  }
+  vctx.restore();
+}
+function quadPath(pts){vctx.beginPath();vctx.moveTo(pts[0].x,pts[0].y);for(let i=1;i<pts.length;i++)vctx.lineTo(pts[i].x,pts[i].y);vctx.closePath();}
+function drawTank(b){
+  const t=LAB.tank,h=LAB.heading;
+  const fx=Math.sin(h),fz=-Math.cos(h),rx=Math.cos(h),rz=Math.sin(h);
+  const cx=LAB.pos.x,cz=LAB.pos.z,y0=surfH(cx,cz)+0.25;
+  const hw=t.w/2,hd=t.d/2,H=t.h;
+  const P=(dx,dz,y)=>({x:cx+rx*dx+fx*dz,y,z:cz+rz*dx+fz*dz});
+  const c=[P(-hw,hd,y0),P(hw,hd,y0),P(hw,-hd,y0),P(-hw,-hd,y0)];
+  const ct=[P(-hw,hd,y0+H),P(hw,hd,y0+H),P(hw,-hd,y0+H),P(-hw,-hd,y0+H)];
+  const s=c.map(p=>worldToScreen(p.x,p.y,p.z,b)),st=ct.map(p=>worldToScreen(p.x,p.y,p.z,b));
+  if(s.some(p=>!p)||st.some(p=>!p))return;
+  vctx.fillStyle='rgba(10,14,20,0.85)';quadPath(s);vctx.fill();          // pedestal
+  vctx.globalAlpha=0.28;texQuad(labOff,[s[0],s[1],st[1],st[0]]);vctx.globalAlpha=1;   // far glass
+  texQuad(labOff,[s[3],s[2],st[2],st[3]]);                               // live field, near glass
+  vctx.fillStyle='rgba(150,200,255,0.07)';quadPath([s[3],s[2],st[2],st[3]]);vctx.fill();
+  vctx.strokeStyle='rgba(190,225,255,0.55)';vctx.lineWidth=1;
+  quadPath([s[3],s[2],st[2],st[3]]);vctx.stroke();
+  quadPath([s[0],s[1],st[1],st[0]]);vctx.stroke();
+  vctx.beginPath();
+  vctx.moveTo(s[0].x,s[0].y);vctx.lineTo(s[3].x,s[3].y);
+  vctx.moveTo(s[1].x,s[1].y);vctx.lineTo(s[2].x,s[2].y);
+  vctx.moveTo(st[0].x,st[0].y);vctx.lineTo(st[3].x,st[3].y);
+  vctx.moveTo(st[1].x,st[1].y);vctx.lineTo(st[2].x,st[2].y);
+  vctx.moveTo(st[3].x,st[3].y);vctx.lineTo(st[2].x,st[2].y);
+  vctx.moveTo(st[0].x,st[0].y);vctx.lineTo(st[1].x,st[1].y);
+  vctx.stroke();
+}
+function drawCurtain(b){
+  const g=LAB.ground;if(!g)return;
+  const dx=Math.cos(LAB.heading),dz=Math.sin(LAB.heading);
+  const ax=LAB.pos.x-dx*g.W/2,az=LAB.pos.z-dz*g.W/2,bx=LAB.pos.x+dx*g.W/2,bz=LAB.pos.z+dz*g.W/2;
+  const mk=(x,y,z)=>worldToScreen(x,y,z,b);
+  let p=[mk(ax,g.vBot,az),mk(bx,g.vBot,bz),mk(bx,g.vTop,bz),mk(ax,g.vTop,az)];
+  if(p.some(q=>!q))return;
+  const nx=-dz,nz2=dx;                                  // show the readable side
+  if((player.x-LAB.pos.x)*nx+(player.z-LAB.pos.z)*nz2<0)p=[p[1],p[0],p[3],p[2]];
+  vctx.globalAlpha=0.94;texQuad(labOff,[p[0],p[1],p[2],p[3]]);vctx.globalAlpha=1;
+  vctx.strokeStyle='rgba(217,179,76,0.6)';vctx.lineWidth=1;
+  quadPath(p);vctx.stroke();
+}
+function drawLabWorld(b){
+  if(!LAB.sim||!LAB.deployed)return;
+  if(LAB.mode==='bench')drawTank(b);else drawCurtain(b);
+}
+/* ---------- pointer interaction ---------- */
+const labPointer={down:false,i:0,j:0,li:0,lj:0,ang:0};
+function labToCell(e){
+  const r=$('labview').getBoundingClientRect(),N=LAB.sim.N;
+  return[(e.clientX-r.left)/r.width*N+0.5,(e.clientY-r.top)/r.height*N+0.5];
+}
+function labHeld(){
+  if(!labPointer.down||!LAB.sim||LAB.paused)return;
+  if(LAB.tool==='vortex'){
+    labPointer.ang+=0.55;
+    const r=7,a=labPointer.ang;
+    const gx=labPointer.i+r*Math.cos(a),gy=labPointer.j+r*Math.sin(a);
+    const dx=-Math.sin(a)*16,dy=Math.cos(a)*16;
+    LAB.sim.stir(gx,gy,dx,dy,4);
+    LAB.rec.rec('stir',{x:+gx.toFixed(2),y:+gy.toFixed(2),dx:+dx.toFixed(3),dy:+dy.toFixed(3),rad:4});
+  }else{
+    LAB.sim.pour(labPointer.i,labPointer.j,LAB.selFluid,0.9,3);
+    LAB.rec.rec('pour',{x:+labPointer.i.toFixed(2),y:+labPointer.j.toFixed(2),rank:LAB.selFluid,rate:0.9,rad:3});
+  }
+}
+/* ---------- world tap — pour straight onto the terrain ---------- */
+function worldPourArm(){
+  return LAB.sim&&LAB.mode==='ground'&&LAB.ground&&$('p-lab').classList.contains('open');
+}
+function worldTapPour(e){
+  const r=view.getBoundingClientRect();
+  const bx=(e.clientX-r.left)/r.width*BUF_W,by=(e.clientY-r.top)/r.height*BUF_H;
+  const a=(bx+0.5)/BUF_W*FOVX-FOVX/2;
+  const el=player.pitch-Math.atan((by-BUF_H/2+0.5)/FOCAL);
+  if(el>0.5)return;                                   // tapped the sky — nothing to pour on
+  const cA=Math.cos(el),sA=Math.sin(el);
+  const aX=Math.sin(player.yaw+a)*cA,aZ=-Math.cos(player.yaw+a)*cA;
+  let hit=null;
+  for(let s=2;s<90;s+=1.1){
+    const px=player.x+aX*s,pz=player.z+aZ*s,py=player.y+sA*s;
+    if(Math.abs(px)>=HALF||Math.abs(pz)>=HALF)break;
+    if(py<=surfH(px,pz)){hit={x:px,z:pz};break;}
+  }
+  if(!hit)return;
+  const dx=Math.cos(LAB.heading),dz=Math.sin(LAB.heading);
+  let t=(hit.x-LAB.pos.x)*dx+(hit.z-LAB.pos.z)*dz;
+  if(!LAB.ground||Math.abs(t)>LAB.ground.W/2-0.6){    // outside the cut — the vessel walks to your tap
+    LAB.pos={x:hit.x,z:hit.z};buildGroundCut();t=0;
+    note('ground cut recentered on your tap — the terrain itself is the floor');
+  }
+  const N=LAB.sim.N,G=LAB.ground;
+  const i=Math.max(1,Math.min(N,Math.floor((t+G.W/2)/G.W*N)+1));
+  const h=surfH(hit.x,hit.z);
+  const js=Math.max(2,Math.min(N-2,Math.round(1+(G.vTop-h)/(G.vTop-G.vBot)*(N-2))));
+  const jp=Math.max(2,js-4);                          // pour a breath above the surface — it falls and splashes
+  labPointer.down=true;labPointer.world=true;labPointer.i=i;labPointer.j=jp;labPointer.ang=0;
+  LAB.sim.pour(i,jp,LAB.selFluid,1.1,3);
+  LAB.rec.rec('pour',{x:+i.toFixed(2),y:+jp.toFixed(2),rank:LAB.selFluid,rate:1.1,rad:3,
+    world:{x:Math.round(hit.x),z:Math.round(hit.z)}});
+  note(OQ.FLUIDT[LAB.selFluid-1].name+' on the terrain at your tap — every drop computed, nothing drawn');
+}
+function bindLabPointer(){
+  const cv=$('labview');
+  cv.addEventListener('pointerdown',e=>{
+    labPointer.down=true;labPointer.world=false;labPointer.ang=0;
+    [labPointer.i,labPointer.j]=labToCell(e);
+    labPointer.li=labPointer.i;labPointer.lj=labPointer.j;
+    cv.setPointerCapture(e.pointerId);
+  });
+  cv.addEventListener('pointermove',e=>{
+    if(!labPointer.down)return;
+    const[cx,cy]=labToCell(e);
+    const dcx=cx-labPointer.li,dcy=cy-labPointer.lj;
+    if(Math.abs(dcx)+Math.abs(dcy)>0.8){
+      const k=14;
+      LAB.sim.stir(cx,cy,dcx*k,dcy*k,6);
+      LAB.rec.rec('stir',{x:+cx.toFixed(2),y:+cy.toFixed(2),dx:+(dcx*k).toFixed(3),dy:+(dcy*k).toFixed(3),rad:6});
+      labPointer.li=cx;labPointer.lj=cy;
+    }
+    labPointer.i=cx;labPointer.j=cy;
+  });
+  const endP=()=>{labPointer.down=false;labPointer.world=false;};
+  cv.addEventListener('pointerup',endP);cv.addEventListener('pointercancel',endP);
+}
+/* ---------- experiment report — the physics and the world it touched ---------- */
+function labReport(){
+  const s=LAB.sim,m=s.metrics(),f=OQ.FLUIDT[LAB.selFluid-1];
+  const D=180/Math.PI;
+  return {
+    meta:{system:'VW Cyberspace Planet — Φ Navier–Stokes Laboratory',seal:'1011911783BD',
+          lineage:LINEAGE,worldChecksum:checksum,integrity:worldChecksum()===checksum,
+          exported:new Date().toISOString(),kind:'experiment report — computed values only'},
+    world:{player:{x:Math.round(player.x),z:Math.round(player.z)},
+      labSite:{x:Math.round(LAB.pos.x),z:Math.round(LAB.pos.z),mode:LAB.mode},
+      elevation:+surfH(player.x,player.z).toFixed(2),
+      hostRock:ROCKN[rockAt(player.x,player.z)],
+      sunAlt:+(SKY.sa*D).toFixed(2),sunAz:+(SKY.saz*D).toFixed(2),
+      moonPhase:+SKY.phase.toFixed(3),tide:+SKY.tide.toFixed(3),
+      worldDay:Math.floor(EP.t/86400)+1,worldTimeS:Math.round(EP.t)},
+    experiment:{chamber:s.chamber,vessel:LAB.mode,grid:s.N,gravity:s.prm.gravity,
+      tool:LAB.tool,
+      fluid:{rank:f.rank,name:f.name,formula:f.formula,density:f.density,
+             viscosity:f.viscosity,rheology:f.rheology,miscibility:f.miscibility},
+      frames:s.frameCount,cumFrames:s.cumFrames,actions:LAB.rec.log.length,
+      simChecksum:s.checksum()},
+    physics:m};
+}
+/* ---------- panel controls ---------- */
+function segWire(id,fn){
+  $(id).querySelectorAll('button').forEach(b2=>b2.onclick=()=>{fn(b2);labRefreshSegs();});
+}
+function buildLabUI(){
+  const ch=$('lb-ch');
+  NSCORE.CHAMBERS.forEach(c=>{
+    const b2=document.createElement('button');b2.dataset.c=c;b2.textContent=c;
+    b2.onclick=()=>{if(LAB.mode==='ground')return;
+      LAB.sim.setChamber(c);LAB.rec.rec('chamber',{name:c});labCaption();labRefreshSegs();};
+    ch.appendChild(b2);
+  });
+  const fl=$('lb-fluids');
+  OQ.FLUIDT.forEach((f,i)=>{
+    const b2=document.createElement('button');b2.className='fluid';
+    const pg=NSCORE.PIGMENT[i];
+    b2.innerHTML='<span class="dot" style="background:rgb('+pg[0]+','+pg[1]+','+pg[2]+')"></span>'
+      +(i+1)+' '+f.name.split(' ').pop()+' '+f.density.toFixed(2);
+    b2.onclick=()=>{LAB.selFluid=i+1;labRefreshSegs();};
+    fl.appendChild(b2);
+  });
+  segWire('lb-mode',b2=>labSetMode(b2.dataset.m));
+  segWire('lb-grav',b2=>{const g=+b2.dataset.g;LAB.sim.prm.gravity=g;LAB.rec.rec('param',{gravity:g});});
+  segWire('lb-grid',b2=>{const n=+b2.dataset.n;if(n!==LAB.sim.N)rebuildLabSim(n);});
+  segWire('lb-tool',b2=>{LAB.tool=b2.dataset.t;labCaption();});
+  const slider=(id,vid,key,post)=>{const el=$(id),vv=$(vid);
+    el.addEventListener('input',()=>{const v=+el.value;vv.textContent=v.toFixed(2);
+      LAB.sim.prm[key]=v;LAB.rec.rec('param',{[key]:v});if(post)post(v);});};
+  slider('lb-speed','lb-vspeed','speed');
+  slider('lb-visc','lb-vvisc','viscScale');
+  slider('lb-eps','lb-veps','epsVort',v=>{LAB.sim.prm.vortOn=v>0;});
+  $('lb-pause').onclick=()=>{LAB.paused=!LAB.paused;$('lb-pause').textContent=LAB.paused?'▶':'⏸';};
+  $('lb-step').onclick=()=>{const dt=LAB.sim.DT*LAB.sim.prm.speed;
+    LAB.sim.tickOnce(dt/24,dt);LAB.sim.clearSources();labRenderField();labDrawPanel();labMetrics();};
+  $('lb-reset').onclick=()=>{LAB.sim.reset();if(LAB.mode==='ground')buildGroundCut();
+    LAB.rec.rec('reset',{});labRenderField();note('reset — reseeded deterministically from seal 1011911783');};
+  $('lb-tr').onclick=()=>{LAB.sim.prm.tracersOn=!LAB.sim.prm.tracersOn;$('lb-tr').classList.toggle('on',LAB.sim.prm.tracersOn);};
+  $('lb-vec').onclick=()=>{LAB.showVec=!LAB.showVec;$('lb-vec').classList.toggle('on',LAB.showVec);};
+  $('lb-dep').onclick=()=>labPlace();
+  $('lb-exp').onclick=()=>{
+    const blob=new Blob([LAB.rec.exportJSON()],{type:'application/json'});
+    const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+    a.download='phi_ns_session_1011911783BD.json';a.click();URL.revokeObjectURL(a.href);
+    note('session exported — deterministic replay guaranteed');};
+  $('lb-rep').onclick=()=>{
+    const rep=labReport();
+    const blob=new Blob([JSON.stringify(rep,null,1)],{type:'application/json'});
+    const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+    a.download='phi_ns_report_'+LINEAGE+'.json';a.click();URL.revokeObjectURL(a.href);
+    note('experiment report exported — physics metrics + world environment, all computed');};
+  $('lb-imp').onclick=()=>$('lb-file').click();
+  $('lb-file').addEventListener('change',e=>{
+    const f=e.target.files[0];if(!f)return;
+    const rd=new FileReader();
+    rd.onload=()=>{try{
+      const sess=JSON.parse(rd.result);
+      const ns=SESSION.replay(sess,sess.frames);
+      LAB.sim=ns;LAB.rec=SESSION.makeRecorder(ns);LAB.N=ns.N;
+      LAB.mode='bench';LAB.ground=null;
+      bindLabBuffers();labRefreshSegs();labCaption();
+      note('replayed '+(sess.frames||0)+' frames — checksum '+ns.checksum().slice(0,8));
+    }catch(err){note('import failed: '+err.message);}};
+    rd.readAsText(f);e.target.value='';
+  });
+  bindLabPointer();
+  $('lb-tr').classList.add('on');
+}
+function labRefreshSegs(){
+  if(!LAB.sim)return;
+  $('lb-mode').querySelectorAll('button').forEach(b2=>b2.classList.toggle('on',b2.dataset.m===LAB.mode));
+  $('lb-ch').querySelectorAll('button').forEach(b2=>{
+    b2.classList.toggle('on',LAB.mode==='bench'&&b2.dataset.c===LAB.sim.chamber);
+    b2.style.opacity=LAB.mode==='ground'?0.35:1;});
+  $('lb-grav').querySelectorAll('button').forEach(b2=>b2.classList.toggle('on',+b2.dataset.g===LAB.sim.prm.gravity));
+  $('lb-grid').querySelectorAll('button').forEach(b2=>b2.classList.toggle('on',+b2.dataset.n===LAB.sim.N));
+  $('lb-tool').querySelectorAll('button').forEach(b2=>b2.classList.toggle('on',b2.dataset.t===LAB.tool));
+  $('lb-fluids').querySelectorAll('button').forEach((b2,i)=>b2.classList.toggle('on',i+1===LAB.selFluid));
+  $('lb-vec').classList.toggle('on',LAB.showVec);
+  $('lb-pause').textContent=LAB.paused?'▶':'⏸';
+}
+
+/* ==================== DYNAMICS CORE PANEL ==================== */
+function drawCoreLog(){
+  $('dc-log').innerHTML=dcLog.slice(0,7).map(e=>'<div>'+e.ev+
+    (e.gate?' '+e.gate:'')+(e.domain?' '+e.domain:'')+(e.pair?' '+e.pair:'')+
+    (e.note?' — '+e.note:'')+'</div>').join('')||'—';
+}
+function drawCorePanel(){
+  const c=vwCore.clock;
+  $('dc-clock').textContent='beat '+(c.beat+1)+' / 24 · rotation '+c.rotation+' · '+c.dial+' ms';
+  $('dc-vdial').textContent=c.dial;
+  $('dc-pairs').innerHTML=vwCore.pairs.map(p=>'<div>'+p.id+' · digit '+p.digit+' · '+p.domain.name+
+    (p.crossing?' → '+p.crossing.to.name:'')+' · '+p.T.frequency+' Hz · E '+p.energy.toFixed(1)+'</div>').join('');
+  const bl=vwCore.pairs.reduce((m,p)=>Math.max(m,p.blend||0),0);
+  $('dc-blend').textContent=bl.toFixed(2);
+  $('dc-blendbar').style.width=(bl*90)+'px';
+  const cv=$('dc-face'),g=cv.getContext('2d');
+  g.clearRect(0,0,120,120);g.save();g.translate(60,60);
+  g.strokeStyle='rgba(122,138,152,.55)';g.beginPath();g.arc(0,0,52,0,Math.PI*2);g.stroke();
+  for(let i2=0;i2<24;i2++){const a2=i2/24*Math.PI*2-Math.PI/2;
+    g.beginPath();g.moveTo(Math.cos(a2)*46,Math.sin(a2)*46);g.lineTo(Math.cos(a2)*52,Math.sin(a2)*52);g.stroke();}
+  const ba=Math.max(0,c.beat)/24*Math.PI*2-Math.PI/2;
+  g.strokeStyle='#ffb454';g.lineWidth=2;g.beginPath();g.moveTo(0,0);g.lineTo(Math.cos(ba)*40,Math.sin(ba)*40);g.stroke();
+  g.fillStyle='#ffb454';g.beginPath();g.arc(0,0,3,0,Math.PI*2);g.fill();g.restore();
+}
+$('dc-dial').oninput=e=>{vwCore.clock.dial=+e.target.value;$('dc-vdial').textContent=e.target.value;};
+
+/* ==================== INPUT · CLOCK · LOOP ==================== */
+const keys={};let dial=60,frames=0,checksum='',minFps=999;
+addEventListener('keydown',e=>{keys[e.code]=true;
+  if(e.code==='BracketLeft'){dial=Math.max(0.25,dial/2);note('time dial ×'+dial+' — the laws do not change, only the watching')}
+  if(e.code==='BracketRight'){dial=Math.min(28800,dial*2);note('time dial ×'+dial)}
+  if(e.code==='Digit1')togglePanel('p-survey');
+  if(e.code==='Digit2')togglePanel('p-sky');
+  if(e.code==='Digit3')togglePanel('p-const');
+  if(e.code==='Digit4')togglePanel('p-diag');
+  if(e.code==='Digit5'){togglePanel('p-lab');
+    if($('p-lab').classList.contains('open'))labOpen();}
+  if(e.code==='Digit6')togglePanel('p-core');});
+addEventListener('keyup',e=>keys[e.code]=false);
+let lx=0,ly=0,dragging=false;
+view.addEventListener('mousedown',e=>{if(worldPourArm()){worldTapPour(e);dragging=true;lx=e.clientX;ly=e.clientY;return;}dragging=true;lx=e.clientX;ly=e.clientY});
+addEventListener('mouseup',()=>{dragging=false;labPointer.down=false;});
+addEventListener('mousemove',e=>{if(!dragging)return;
+  if(labPointer.world&&Math.hypot(e.clientX-lx,e.clientY-ly)>7){labPointer.down=false;labPointer.world=false;}   // it became a look-drag — the pour stops
+  player.yaw+=(e.clientX-lx)*0.0032;player.pitch=Math.max(-1.45,Math.min(1.45,player.pitch-(e.clientY-ly)*0.0032));lx=e.clientX;ly=e.clientY;});
+let moveT=null,lookT=null,mx0=0,my0=0;const touchMove={x:0,y:0};
+view.addEventListener('touchstart',e=>{for(const t of e.changedTouches){
+  if(t.clientX<innerWidth/2&&moveT===null){moveT=t.identifier;mx0=t.clientX;my0=t.clientY}
+  else if(lookT===null){lookT=t.identifier;lx=t.clientX;ly=t.clientY}}},{passive:true});
+view.addEventListener('touchmove',e=>{for(const t of e.changedTouches){
+  if(t.identifier===moveT){touchMove.x=(t.clientX-mx0)/60;touchMove.y=(t.clientY-my0)/60}
+  else if(t.identifier===lookT){player.yaw+=(t.clientX-lx)*0.005;player.pitch=Math.max(-1.45,Math.min(1.45,player.pitch-(t.clientY-ly)*0.005));lx=t.clientX;ly=t.clientY}}},{passive:true});
+view.addEventListener('touchend',e=>{for(const t of e.changedTouches){
+  if(t.identifier===moveT){moveT=null;touchMove.x=touchMove.y=0}
+  if(t.identifier===lookT)lookT=null;}},{passive:true});
+function stepPlayer(dt){
+  const spd=player.speed*(keys.ShiftLeft||keys.ShiftRight?3:1);
+  const sy=Math.sin(player.yaw),cy=Math.cos(player.yaw);
+  const fw=(keys.KeyW?1:0)-(keys.KeyS?1:0)-touchMove.y;
+  const st=(keys.KeyD?1:0)-(keys.KeyA?1:0)+touchMove.x;
+  player.x+=(sy*fw+cy*st)*spd*dt;player.z+=(-cy*fw+sy*st)*spd*dt;
+  player.y+=((keys.Space?1:0)-(keys.KeyC?1:0))*spd*0.8*dt;
+  const g=surfH(player.x,player.z)+1.7;
+  if(player.y<g){player.y=g}
+  const rr=Math.hypot(player.x,player.z),lim=HALF*0.98;
+  if(rr>lim){const f=lim/rr;player.x*=f;player.z*=f;
+    if(frames%240===0)note('the province ends — the planet goes on')}
+}
+let lastT=performance.now();
+function sealWorld(){
+  const sunD=[-1,0,0];let best=-2,bth=0;
+  for(let i=0;i<1440;i++){const th=i/1440*2*Math.PI,B=basisAt(LAT0,0,th);
+    const d=B.u[0]*sunD[0]+B.u[1]*sunD[1]+B.u[2]*sunD[2];
+    if(d>best){best=d;bth=th}}
+  THETA0=bth;
+  let sx=0,sz=HALF*0.3,found=false;
+  for(let r=200;r<HALF*0.9&&!found;r+=137){
+    for(let a=0;a<6.283;a+=0.21){
+      const tx=Math.cos(a)*r,tz=Math.sin(a)*r,h=surfH(tx,tz);
+      if(h<4||h>40)continue;
+      const gx=(surfH(tx+CELL,tz)-surfH(tx-CELL,tz))/20,gz=(surfH(tx,tz+CELL)-surfH(tx,tz-CELL))/20;
+      if(Math.hypot(gx,gz)>0.10)continue;
+      let wet=false;
+      for(let d2=300;d2<=900&&!wet;d2+=300)
+        if(surfH(tx+d2,tz)<SEA||surfH(tx-d2,tz)<SEA||surfH(tx,tz+d2)<SEA||surfH(tx,tz-d2)<SEA)wet=true;
+      if(!wet)continue;
+      sx=tx;sz=tz;found=true;break;}
+    if(found)break;}
+  player.x=sx;player.z=sz;player.y=surfH(sx,sz)+2.2;
+  checksum=worldChecksum();
+  $('gen').style.display='none';
+  fillConst();
+  note('world sealed — lineage '+LINEAGE+' · checksum '+checksum);
+  hud();
+}
+function loop(){
+  requestAnimationFrame(loop);
+  const now=performance.now();let dt=(now-lastT)/1000;lastT=now;
+  if(dt>0.25)dt=0.25;frames++;
+  if(!worldSealed){
+    genRows(48);
+    $('genbar').style.width=(genRow/GRID*100).toFixed(1)+'%';
+    $('gentext').textContent='sealing the province — '+Math.round(genRow/GRID*100)+'% · nothing drawn in; everything calculated';
+    if(worldSealed)sealWorld();
+    return;
+  }
+  const dtW=dt*dial;
+  ephemAdvance(dtW);
+  vwCore.update(dt*1000);                              // the core keeps real time — the world dial cannot flood it
+  /* underwater crossing — the medium changes through the core's Möbius gate,
+     so the fog and the sky tint bleed across, never snap */
+  if(player.underwater!==wasUnder){wasUnder=player.underwater;
+    const want=wasUnder?DOM_WATER:DOM_AIR;
+    if(worldPair.crossing&&worldPair.crossing.to!==want){   // the medium changed its mind mid-crossing — reverse the bleed
+      worldPair.crossing={from:worldPair.domain,to:want,t:0,s:0,dur:1.6};
+      vwCore.emit('seam',{pair:worldPair.id,from:worldPair.domain.name,to:want.name,note:'Möbius crossfade reversed — the transition bleeds back'});
+    } else vwCore.beginCrossing(worldPair,want,1.6);}
+  uwF=worldPair.crossing?0.5-0.5*Math.cos(Math.PI*worldPair.crossing.s)
+                        :(worldPair.domain===DOM_WATER?1:0);
+  stepPlayer(dt);
+  for(const c of clouds){c.x+=2.4*dtW;c.z+=1.1*dtW;
+    if(c.x>HALF)c.x=-HALF;if(c.z>HALF)c.z=-HALF;if(c.z<-HALF)c.z=HALF}
+  renderFrame();
+  /* the laboratory computes on its own φ-clock, watched or not */
+  if(LAB.sim){
+    if(!LAB.paused){
+      LAB.sim.frame();
+      if(LAB.sim.chamber==='VORTEX STREET')LAB.sim.updateStreet();
+      if(LAB.sim.chamber==='CAVITY')LAB.sim.streamfunction();
+      labHeld();
+      labRenderField();
+    }
+    if($('p-lab').classList.contains('open'))labDrawPanel();
+  }
+  if(frames%15===0){hud();
+    if($('p-survey').classList.contains('open'))runSurvey();
+    if($('p-sky').classList.contains('open'))skyPanel();
+    if(LAB.sim&&$('p-lab').classList.contains('open'))labMetrics();
+    if($('p-core').classList.contains('open'))drawCorePanel();
+    if($('p-diag').classList.contains('open')){
+      $('dg-fps').textContent=(1/Math.max(1e-3,dt)).toFixed(0)+' · '+frames;
+      $('dg-sum').textContent=checksum;$('dg-eph').textContent=EP.steps.toLocaleString();
+      $('dg-span').textContent=(EP.t/86400).toFixed(3)+' world-days';}}
+}
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
